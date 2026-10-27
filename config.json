@@ -1,6 +1,6 @@
 {
   "appName": "四级教练 CET4Coach",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "llm": {
     "provider": "deepseek",
     "baseUrl": "https://api.deepseek.com",
@@ -10,6 +10,9 @@
     "dailyCallBudget": 60,
     "temperature": 0.3,
     "maxTokens": 1600,
+    "explanationModel": "deepseek-chat",
+    "explanationMaxTokens": 2400,
+    "explanationTemperature": 0.2,
     "cacheEnabled": true
   },
   "paths": {
@@ -17,6 +20,7 @@
     "cache": "data/cache",
     "logs": "data/logs",
     "sessions": "data/sessions",
+    "history": "data/history",
     "questions": "data/questions.json",
     "materials": "data/materials.json",
     "words": "data/words.json",
@@ -67,10 +71,10 @@
     "days": 90
   },
   "ui": {
-    "fontPt": 16,
-    "titlePt": 26,
-    "width": 1180,
-    "height": 800
+    "fontPt": 17,
+    "titlePt": 30,
+    "width": 1400,
+    "height": 940
   },
   "cost": {
     "dailyCallBudget": 60

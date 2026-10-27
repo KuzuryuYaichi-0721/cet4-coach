@@ -261,7 +261,7 @@ function Show-CoursePage {
     Clear-ContentPanel
     $head = New-PageHeader '四级入门微课' '先花 5—8 分钟弄懂「分在哪里」，后面每天练什么就不再糊里糊涂。'
     $script:ContentPanel.Controls.Add($head)
-    $card = New-UiCard -Width 980 -Height 640
+    $card = New-UiCard -Width 1060 -Height 640
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $title = New-UiLabel -Text '' -Size 22 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark -MaxWidth 920
@@ -272,7 +272,7 @@ function Show-CoursePage {
     $card.Controls.Add($progress)
     $bodyHost = New-Object System.Windows.Forms.Panel
     $bodyHost.Location = New-Object System.Drawing.Point(18, 64)
-    $bodyHost.Size = New-Object System.Drawing.Size(940, 480)
+    $bodyHost.Size = New-Object System.Drawing.Size(1040, 480)
     $bodyHost.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
     $card.Controls.Add($bodyHost)
     $body = New-Object System.Windows.Forms.RichTextBox
@@ -284,7 +284,7 @@ function Show-CoursePage {
     $bodyHost.Controls.Add($body)
     $quizPanel = New-Object System.Windows.Forms.Panel
     $quizPanel.Location = New-Object System.Drawing.Point(18, 64)
-    $quizPanel.Size = New-Object System.Drawing.Size(940, 500)
+    $quizPanel.Size = New-Object System.Drawing.Size(1040, 500)
     $quizPanel.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
     $quizPanel.Visible = $false
     $quizPanel.AutoScroll = $true
@@ -311,4 +311,5 @@ function Show-CoursePage {
     }
     Set-CourseSlide 0
     Set-StatusBar '完成 3 题小测后进入主菜单。'
+    Reset-ContentScroll
 }

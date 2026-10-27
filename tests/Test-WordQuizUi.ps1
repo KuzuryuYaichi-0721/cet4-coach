@@ -51,6 +51,21 @@ try {
     Shot 'quiz.png'
     if ($script:QuizUi -and $script:QuizUi.Session) {
         Write-Host "quiz session q: $($script:QuizUi.Session.questionIds.Count), index=$($script:QuizUi.Session.index)"
+        $qs = $script:QuizUi.Session
+        $qq = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $qs 'index' 0)]
+        $qc = Get-ObjectPropertyValue $qs 'current' $null
+        if ($qc) {
+            $opts = @(Get-ObjectPropertyValue $qc 'optionOrder' @($qq.options))
+            $ck = [string](Get-ObjectPropertyValue $qc 'correctKey' $qq.answer)
+            $localFb = Get-LocalTeacherFeedback -Question $qq -Selected 'A' -Wrong $true -DisplayOptions $opts -CorrectKey $ck -PreviousEntry $null
+            Set-ObjectPropertyValue $qc 'submitted' $true
+            Set-ObjectPropertyValue $qc 'correct' $false
+            Set-ObjectPropertyValue $qc 'feedback' $localFb
+            Set-ObjectPropertyValue $qc 'evaluation' ([pscustomobject]@{ encouragement = '先记动作。'; reason_quality = '一般'; error_type = '定位错'; source = 'local' })
+            Set-ObjectPropertyValue $qs 'current' $qc
+            Show-QuizFeedback
+            Shot 'feedback.png'
+        }
     }
     Write-Host 'Word+Quiz UI smoke OK'
 } catch {

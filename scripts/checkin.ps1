@@ -186,13 +186,13 @@ function Invoke-WeeklyReport {
 
 function Show-WeeklyReportCard {
     param($Parent, [int]$Y = 0)
-    $card = New-UiCard -Width 960 -Height 250
+    $card = New-UiCard -Width 1060 -Height 250
     $card.Location = New-Object System.Drawing.Point(0, $Y)
     $Parent.Controls.Add($card)
     $title = New-UiLabel -Text '本周错题画像' -Size 20 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
     $title.Location = New-Object System.Drawing.Point(20, 16)
     $card.Controls.Add($title)
-    $body = New-UiLabel -Text '每周日会根据错题本生成 3-5 句画像；平时也可以点按钮手动生成。' -Size 15 -Color $script:UiMutedColor -MaxWidth 880
+    $body = New-UiLabel -Text '每周日会根据错题本生成 3-5 句画像；平时也可以点按钮手动生成。' -Size 15 -Color $script:UiMutedColor -MaxWidth 960
     $body.Location = New-Object System.Drawing.Point(20, 58)
     $card.Controls.Add($body)
     $btn = New-UiButton -Text '生成本周画像' -Width 190 -OnClick {
@@ -201,7 +201,7 @@ function Show-WeeklyReportCard {
             $r = Invoke-WeeklyReport -Force
             $script:WeeklyBody.Text = [string]$r.text
             $script:WeeklyBody.AutoSize = $true
-            $script:WeeklyBody.MaximumSize = New-Object System.Drawing.Size -ArgumentList 880, 0
+            $script:WeeklyBody.MaximumSize = New-Object System.Drawing.Size -ArgumentList 960, 0
             Set-StatusBar '本周画像已生成并缓存。'
         } catch {
             Show-AppMessage ('生成失败：' + (Format-SafeError $_)) '周复盘' ([System.Windows.Forms.MessageBoxIcon]::Warning)
@@ -221,18 +221,18 @@ function Show-CheckinPage {
     $script:ContentPanel.Controls.Add($head)
     $data = Get-CheckinData
     $streak = Get-CheckinStreak $data
-    $card = New-UiCard -Width 960 -Height 82
+    $card = New-UiCard -Width 1060 -Height 82
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $streakLabel = New-UiLabel -Text ("连续学习 {0} 天" -f $streak) -Size 24 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
     $streakLabel.Location = New-Object System.Drawing.Point(20, 14)
     $card.Controls.Add($streakLabel)
     $enc = Get-StreakEncouragement $data $streak
-    $sub = New-UiLabel -Text ($(if ($enc) { $enc } else { '完成 7/14/30 天时，这里会出现一句简短的鼓励。' })) -Size 14 -Color $script:UiMutedColor -MaxWidth 850
+    $sub = New-UiLabel -Text ($(if ($enc) { $enc } else { '完成 7/14/30 天时，这里会出现一句简短的鼓励。' })) -Size 14 -Color $script:UiMutedColor -MaxWidth 950
     $sub.Location = New-Object System.Drawing.Point(280, 22)
     $card.Controls.Add($sub)
 
-    $calCard = New-UiCard -Width 960 -Height 500
+    $calCard = New-UiCard -Width 1060 -Height 500
     $calCard.Location = New-Object System.Drawing.Point(0, 195)
     $script:ContentPanel.Controls.Add($calCard)
     $script:CalendarMonth = (Get-Date).Date.AddDays(1 - (Get-Date).Day)
@@ -293,4 +293,5 @@ function Show-CheckinPage {
 
     $weeklyCard = Show-WeeklyReportCard -Parent $script:ContentPanel -Y 710
     Set-StatusBar '打卡记录保存在 data/checkin.json。'
+    Reset-ContentScroll
 }

@@ -294,6 +294,68 @@ function Get-QuizAudioPath {
     return $null
 }
 
+function Get-WrongBookEntry {
+    param([string]$Id)
+    if (-not $Id) { return $null }
+    $all = @(Read-JsonFile (Get-ConfigValue 'paths.wrongbook' 'data/wrongbook.json') @() -Quiet)
+    return @($all | Where-Object { [string](Get-ObjectPropertyValue $_ 'id' '') -eq $Id })[0]
+}
+
+function Get-QuestionDisplayOptions {
+    param($Question, $Current)
+    if ($null -eq $Question) { return $null }
+    $existing = Get-ObjectPropertyValue $Current 'optionOrder' $null
+    if ($null -ne $existing -and @($existing).Count -gt 0) {
+        return [pscustomobject]@{
+            Options = @($existing)
+            CorrectKey = [string](Get-ObjectPropertyValue $Current 'correctKey' $Question.answer)
+            Shuffled = [bool](Get-ObjectPropertyValue $Current 'shuffled' $false)
+        }
+    }
+    $options = @($Question.options)
+    $previous = Get-WrongBookEntry ([string]$Question.id)
+    $wrongBefore = $false
+    if ($null -ne $previous) {
+        $wrongBefore = ([int](Get-ObjectPropertyValue $previous 'wrongCount' 0) -ge 1)
+    }
+    $shuffled = $false
+    $correctKey = [string]$Question.answer
+    if ($wrongBefore -and $options.Count -ge 2 -and $options.Count -le 4) {
+        $originalAnswer = [string]$Question.answer
+        $answerText = ''
+        foreach ($o in $options) {
+            if ([string](Get-ObjectPropertyValue $o 'key' '') -eq $originalAnswer) { $answerText = [string](Get-ObjectPropertyValue $o 'text' '') }
+        }
+        if ([string]::IsNullOrWhiteSpace($answerText)) { $wrongBefore = $false }
+    }
+    if ($wrongBefore -and $options.Count -ge 2 -and $options.Count -le 4) {
+        $originalAnswer = [string]$Question.answer
+        $answerText = ''
+        foreach ($o in $options) {
+            if ([string](Get-ObjectPropertyValue $o 'key' '') -eq $originalAnswer) { $answerText = [string](Get-ObjectPropertyValue $o 'text' '') }
+        }
+        $shuffledOptions = @($options | Get-Random -Count $options.Count)
+        $originalTextOrder = (@($options | ForEach-Object { [string](Get-ObjectPropertyValue $_ 'text' '') }) -join '||')
+        $newTextOrder = (@($shuffledOptions | ForEach-Object { [string](Get-ObjectPropertyValue $_ 'text' '') }) -join '||')
+        if ($shuffledOptions.Count -gt 1 -and $originalTextOrder -eq $newTextOrder) {
+            $shuffledOptions = @($shuffledOptions | Select-Object -Skip 1) + @($shuffledOptions[0])
+        }
+        $keys = @('A', 'B', 'C', 'D')
+        $newOptions = @()
+        $idx = 0
+        foreach ($o in $shuffledOptions) {
+            $newKey = $keys[$idx]
+            $text = [string](Get-ObjectPropertyValue $o 'text' '')
+            $newOptions += [ordered]@{ key = $newKey; text = $text }
+            if ($text -eq $answerText) { $correctKey = $newKey }
+            $idx++
+        }
+        $options = $newOptions
+        $shuffled = $true
+    }
+    return [pscustomobject]@{ Options = @($options); CorrectKey = $correctKey; Shuffled = $shuffled; Previous = $previous }
+}
+
 function Add-QuestionToWrongBook {
     param(
         $Question,
@@ -303,6 +365,9 @@ function Add-QuestionToWrongBook {
         [string]$Explanation,
         [string]$TeacherExplanation,
         [string]$Technique,
+        [string]$SelectedText = '',
+        [string]$CorrectKey = '',
+        $DeepFeedback = $null,
         [switch]$Incomplete
     )
     if ($null -eq $Question) { return }
@@ -317,22 +382,30 @@ function Add-QuestionToWrongBook {
             stem = $Question.stem; options = $Question.options; answer = $Question.answer;
             userAnswer = $UserAnswer; userReason = $UserReason; errorType = $ErrorType;
             explanation = $Explanation; teacherExplanation = $TeacherExplanation; technique = $Technique;
+            lastSelectedText = $SelectedText; lastCorrectKey = $CorrectKey; deepFeedback = $DeepFeedback;
             source = $Question.source; wrongCount = 1; firstWrongAt = $now; lastWrongAt = $now;
             masteredConsecutive = 0; active = $true; incomplete = [bool]$Incomplete;
+            reviewCount = 1; learnedTwice = $false;
         }
         $all += $entry
     } else {
-        $entry.userAnswer = $UserAnswer
-        $entry.userReason = $UserReason
-        $entry.errorType = $ErrorType
-        $entry.explanation = $Explanation
-        $entry.teacherExplanation = $TeacherExplanation
-        $entry.technique = $Technique
-        $entry.lastWrongAt = $now
-        $entry.wrongCount = [int](Get-ObjectPropertyValue $entry 'wrongCount' 0) + 1
-        $entry.masteredConsecutive = 0
-        $entry.active = $true
-        $entry.incomplete = [bool]$Incomplete
+        Set-ObjectPropertyValue $entry 'userAnswer' $UserAnswer
+        Set-ObjectPropertyValue $entry 'userReason' $UserReason
+        Set-ObjectPropertyValue $entry 'errorType' $ErrorType
+        Set-ObjectPropertyValue $entry 'explanation' $Explanation
+        Set-ObjectPropertyValue $entry 'teacherExplanation' $TeacherExplanation
+        Set-ObjectPropertyValue $entry 'technique' $Technique
+        Set-ObjectPropertyValue $entry 'lastSelectedText' $SelectedText
+        Set-ObjectPropertyValue $entry 'lastCorrectKey' $CorrectKey
+        Set-ObjectPropertyValue $entry 'deepFeedback' $DeepFeedback
+        Set-ObjectPropertyValue $entry 'lastWrongAt' $now
+        Set-ObjectPropertyValue $entry 'wrongCount' ([int](Get-ObjectPropertyValue $entry 'wrongCount' 0) + 1)
+        $newReviewCount = [int](Get-ObjectPropertyValue $entry 'reviewCount' 0) + 1
+        Set-ObjectPropertyValue $entry 'reviewCount' $newReviewCount
+        Set-ObjectPropertyValue $entry 'learnedTwice' ($newReviewCount -ge 2)
+        Set-ObjectPropertyValue $entry 'masteredConsecutive' 0
+        Set-ObjectPropertyValue $entry 'active' $true
+        Set-ObjectPropertyValue $entry 'incomplete' ([bool]$Incomplete)
     }
     Write-JsonFile $path @($all)
 }
@@ -340,13 +413,18 @@ function Add-QuestionToWrongBook {
 function Register-CorrectWrongBookAnswer {
     param($Question, [bool]$ReasonOk = $true)
     if ($null -eq $Question) { return }
-    if (-not $ReasonOk) { return }
     $path = Get-ConfigValue 'paths.wrongbook' 'data/wrongbook.json'
     $all = @(Read-JsonFile $path @() -Quiet)
     $id = [string]$Question.id
     $entry = @($all | Where-Object { [string](Get-ObjectPropertyValue $_ 'id' '') -eq $id })[0]
     if ($null -eq $entry) { return }
     if (-not [bool](Get-ObjectPropertyValue $entry 'active' $false)) { return }
+    $entry.reviewCount = [int](Get-ObjectPropertyValue $entry 'reviewCount' 0) + 1
+    $entry.learnedTwice = ([int]$entry.reviewCount -ge 2)
+    if (-not $ReasonOk) {
+        Write-JsonFile $path @($all)
+        return
+    }
     $entry.masteredConsecutive = [int](Get-ObjectPropertyValue $entry 'masteredConsecutive' 0) + 1
     $entry.lastCorrectAt = (Get-Date).ToString('o')
     if ([int]$entry.masteredConsecutive -ge 2) {
@@ -368,4 +446,56 @@ function Get-IncompleteReviewIds {
 function Format-QuestionOptionsForPrompt {
     param($Options)
     return (@($Options | ForEach-Object { '{0}) {1}' -f (Get-ObjectPropertyValue $_ 'key' ''), (Get-ObjectPropertyValue $_ 'text' '') }) -join "`n")
+}
+
+function Save-QuizRoundHistory {
+    param($Session, $Questions)
+    if ($null -eq $Session) { return }
+    $histDir = Get-CET4Path (Get-ConfigValue 'paths.history' 'data/history')
+    if (-not (Test-Path -LiteralPath $histDir)) { New-Item -ItemType Directory -Force -Path $histDir | Out-Null }
+    $results = @(Get-ObjectPropertyValue $Session 'results' @())
+    $qIndex = @{}
+    foreach ($q in @($Questions)) { if ($q.id) { $qIndex[[string]$q.id] = $q } }
+    $items = @()
+    foreach ($r in $results) {
+        $q = $qIndex[[string](Get-ObjectPropertyValue $r 'questionId' '')]
+        if ($null -eq $q) { continue }
+        $items += [ordered]@{
+            questionId = $q.id
+            type = $q.type
+            year = $q.year
+            paper_key = $q.paper_key
+            stem = $q.stem
+            options = $q.options
+            answer = $q.answer
+            selected = [string](Get-ObjectPropertyValue $r 'selected' '')
+            reason = [string](Get-ObjectPropertyValue $r 'reason' '')
+            correct = [bool](Get-ObjectPropertyValue $r 'correct' $false)
+            answered = [bool](Get-ObjectPropertyValue $r 'answered' $false)
+            errorType = [string](Get-ObjectPropertyValue $r 'errorType' '')
+            reasonQuality = [string](Get-ObjectPropertyValue $r 'reasonQuality' '')
+            replayCount = [int](Get-ObjectPropertyValue $r 'replayCount' 0)
+            correctKey = [string](Get-ObjectPropertyValue $r 'correctKey' $q.answer)
+            selectedText = [string](Get-ObjectPropertyValue $r 'selectedText' '')
+            feedbackSource = [string](Get-ObjectPropertyValue $r 'feedbackSource' '')
+            misconception = [string](Get-ObjectPropertyValue $r 'misconception' '')
+            teacherExplanation = [string](Get-ObjectPropertyValue $r 'teacherExplanation' '')
+            technique = [string](Get-ObjectPropertyValue $r 'technique' '')
+            optionAnalysis = @(Get-ObjectPropertyValue $r 'optionAnalysis' @())
+        }
+    }
+    $payload = [ordered]@{
+        version = 1
+        kind = 'quiz'
+        date = [string](Get-ObjectPropertyValue $Session 'date' (Get-TodayString))
+        startedAt = [string](Get-ObjectPropertyValue $Session 'startedAt' '')
+        completedAt = (Get-Date).ToString('o')
+        minutes = [int](Get-ConfigValue 'quiz.minutes' 30)
+        summary = Get-ObjectPropertyValue $Session 'summary' $null
+        results = $items
+        note = [string](Get-ObjectPropertyValue $Session 'note' '')
+    }
+    $name = 'quiz-{0}-{1}.json' -f (Get-ObjectPropertyValue $Session 'date' (Get-TodayString)), (Get-Date).ToString('HHmmss')
+    Write-JsonFile (Join-Path $histDir $name) $payload
+    Write-JsonFile (Join-Path $histDir 'latest-quiz.json') $payload
 }

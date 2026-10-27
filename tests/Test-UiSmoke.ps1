@@ -47,7 +47,9 @@ try {
     Shot 'settings.png'
     Show-ImportPage
     Shot 'import.png'
+    $script:ContentPanel.AutoScrollPosition = New-Object System.Drawing.Point(0, 260)
     Show-ListeningPage
+    if ([Math]::Abs($script:ContentPanel.AutoScrollPosition.Y) -gt 2) { throw 'page navigation did not reset scroll to top' }
     Shot 'listening.png'
     Show-CheckinPage
     Shot 'checkin.png'

@@ -129,6 +129,7 @@ function Initialize-AppData {
         (Get-ConfigValue 'paths.cache' 'data/cache'),
         (Get-ConfigValue 'paths.logs' 'data/logs'),
         (Get-ConfigValue 'paths.sessions' 'data/sessions'),
+        (Get-ConfigValue 'paths.history' 'data/history'),
         (Get-ConfigValue 'paths.libraryAudio' 'library/audio'),
         (Get-ConfigValue 'paths.sourceAudio' 'library/source_audio'),
         (Get-ConfigValue 'paths.temp' 'temp')
@@ -305,26 +306,42 @@ function Set-PageTimer {
     return $t
 }
 
+function Reset-ContentScroll {
+    if ($null -eq $script:ContentPanel) { return }
+    try {
+        $script:ContentPanel.AutoScrollPosition = New-Object System.Drawing.Point(0, 0)
+        $script:ContentPanel.VerticalScroll.Value = 0
+        $script:ContentPanel.HorizontalScroll.Value = 0
+        $script:ContentPanel.PerformLayout()
+    } catch { }
+}
+
 function Clear-ContentPanel {
     Stop-PageTimer
     if ($script:ContentPanel) {
-        $script:ContentPanel.Controls.Clear()
+        $script:ContentPanel.SuspendLayout()
+        try {
+            $script:ContentPanel.Controls.Clear()
+            Reset-ContentScroll
+        } finally {
+            $script:ContentPanel.ResumeLayout($true)
+        }
     }
 }
 
 function New-PageHeader {
     param([string]$Title, [string]$Subtitle = '')
     $head = New-Object System.Windows.Forms.Panel
-    $head.Width = 980
-    $head.Height = $(if ($Subtitle) { 90 } else { 64 })
+    $head.Width = 1060
+    $head.Height = $(if ($Subtitle) { 96 } else { 72 })
     $head.BackColor = $script:UiBackground
-    $head.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 8)
-    $t = New-UiLabel -Text $Title -Size 26 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $head.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
+    $t = New-UiLabel -Text $Title -Size 30 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark -MaxWidth 1040
     $t.Location = New-Object System.Drawing.Point(0, 0)
     $head.Controls.Add($t)
     if ($Subtitle) {
-        $s = New-UiLabel -Text $Subtitle -Size 13 -Color $script:UiMutedColor -MaxWidth 940
-        $s.Location = New-Object System.Drawing.Point(2, 48)
+        $s = New-UiLabel -Text $Subtitle -Size 14 -Color $script:UiMutedColor -MaxWidth 1020
+        $s.Location = New-Object System.Drawing.Point(3, 56)
         $head.Controls.Add($s)
     }
     return $head

@@ -3,6 +3,7 @@ data/logs/*
 data/cache/*
 data/plans/*
 data/sessions/*
+data/history/*
 data/backup/*
 data/llm_usage.json
 data/audio_missing_report.json

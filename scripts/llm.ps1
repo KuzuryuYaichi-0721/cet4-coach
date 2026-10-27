@@ -205,8 +205,9 @@ function ConvertFrom-DeepSeekJsonText {
 }
 
 function Get-DeepSeekCacheKey {
-    param([string]$Purpose, $CacheParts)
-    $payload = [ordered]@{ purpose = $Purpose; model = (Get-ConfigValue 'llm.model' 'deepseek-chat'); parts = $CacheParts }
+    param([string]$Purpose, $CacheParts, [string]$Model = '')
+    if ([string]::IsNullOrWhiteSpace($Model)) { $Model = [string](Get-ConfigValue 'llm.model' 'deepseek-chat') }
+    $payload = [ordered]@{ purpose = $Purpose; model = $Model; parts = $CacheParts }
     return (($payload | ConvertTo-Json -Depth 12 -Compress))
 }
 
@@ -225,10 +226,12 @@ function Invoke-DeepSeekChat {
         [int]$MaxRetries = -1,
         [switch]$NoCache,
         [switch]$BypassBudget,
-        [string]$LogTag = ''
+        [string]$LogTag = '',
+        [string]$Model = ''
     )
 
-    $model = [string](Get-ConfigValue 'llm.model' 'deepseek-chat')
+    if ([string]::IsNullOrWhiteSpace($Model)) { $Model = [string](Get-ConfigValue 'llm.model' 'deepseek-chat') }
+    $model = $Model
     if ($Temperature -lt 0) { $Temperature = [double](Get-ConfigValue 'llm.temperature' 0.3) }
     if ($MaxTokens -le 0) { $MaxTokens = [int](Get-ConfigValue 'llm.maxTokens' 1600) }
     if ($TimeoutSec -le 0) { $TimeoutSec = [int](Get-ConfigValue 'llm.timeoutSec' 60) }
@@ -236,7 +239,7 @@ function Invoke-DeepSeekChat {
     $cacheEnabled = [bool](Get-ConfigValue 'llm.cacheEnabled' $true)
 
     if ([string]::IsNullOrWhiteSpace($CacheKey) -and $null -ne $CacheParts) {
-        $CacheKey = Get-DeepSeekCacheKey -Purpose $Purpose -CacheParts $CacheParts
+        $CacheKey = Get-DeepSeekCacheKey -Purpose $Purpose -CacheParts $CacheParts -Model $model
     }
     $useCache = (-not $NoCache) -and $cacheEnabled -and (-not [string]::IsNullOrWhiteSpace($CacheKey))
     if ($useCache) {

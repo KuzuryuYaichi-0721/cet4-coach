@@ -412,7 +412,7 @@ function Show-WordSessionSummary {
     $summary = Get-WordSessionSummary $Session
     $head = New-PageHeader '今天的单词任务' '未完成的词会自动进入下次复习。'
     $script:ContentPanel.Controls.Add($head)
-    $card = New-UiCard -Width 960 -Height 470
+    $card = New-UiCard -Width 1060 -Height 470
     $card.Location = New-Object System.Drawing.Point(0, 105)
     $script:ContentPanel.Controls.Add($card)
     Add-WordResultLine $card '30 分钟到点，先休息一下。' 20 $script:UiPrimaryDark 22 | Out-Null
@@ -428,6 +428,7 @@ function Show-WordSessionSummary {
     $card.Controls.Add($b2)
     Stop-PageTimer
     Set-StatusBar '单词任务结束。'
+    Reset-ContentScroll
 }
 
 function Show-WordFeedbackView {
@@ -441,21 +442,30 @@ function Show-WordFeedbackView {
     $zh = [string](Get-ObjectPropertyValue $sentence 'zh' '')
     $wordData = @(Get-WordBank | Where-Object { $_.word -eq $word })[0]
     $meaning = if ($wordData) { [string]$wordData.meaning } else { '' }
-    Add-WordResultLine $card ("{0}  ·  {1}" -f $word, $(if ($Step -eq 'sentence') { '造句反馈' } else { '释义反馈' })) 18 $script:UiPrimaryDark 22 | Out-Null
+    $y = 18
+    $titleLabel = Add-WordResultLine $card ("{0}  ·  {1}" -f $word, $(if ($Step -eq 'sentence') { '造句反馈' } else { '释义反馈' })) $y $script:UiPrimaryDark 23
+    $y += [Math]::Max(34, $titleLabel.PreferredHeight + 8)
     $box = New-Object System.Windows.Forms.RichTextBox
-    $box.Location = New-Object System.Drawing.Point(20, 62)
-    $box.Width = 910; $box.Height = 100; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
-    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241)
+    $box.Location = New-Object System.Drawing.Point(20, $y)
+    $box.Width = 1010; $box.Height = 108; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box $en $word
     $card.Controls.Add($box)
+    $y += 122
     $zhLabel = if ([string](Get-ObjectPropertyValue $sentence 'zh_source' '') -eq 'MyMemory-machine-translation') { '中文翻译' } elseif ([string](Get-ObjectPropertyValue $sentence 'sentence_type' '') -eq '真题') { '中文提示' } else { '中文' }
-    Add-WordResultLine $card ("{0}：{1}" -f $zhLabel, $zh) 172 $script:UiMutedColor 15 | Out-Null
-    Add-WordResultLine $card ("核心释义：{0}" -f $meaning) 204 $script:UiTextColor 15 | Out-Null
+    $zhLine = Add-WordResultLine $card ("{0}：{1}" -f $zhLabel, $zh) $y $script:UiMutedColor 15
+    $y += [Math]::Max(26, $zhLine.PreferredHeight + 6)
+    $meaningLine = Add-WordResultLine $card ("核心释义：{0}" -f $meaning) $y $script:UiTextColor 16
+    $y += [Math]::Max(28, $meaningLine.PreferredHeight + 6)
     $feedback = [string](Get-ObjectPropertyValue $Payload 'feedback' '')
     if (-not $feedback) { $feedback = [string](Get-ObjectPropertyValue $Payload 'message' '') }
-    Add-WordResultLine $card ("老师反馈：{0}" -f $feedback) 242 $script:UiPrimaryDark 16 | Out-Null
+    $feedbackLine = Add-WordResultLine $card ("老师反馈：{0}" -f $feedback) $y $script:UiPrimaryDark 17
+    $y += [Math]::Max(30, $feedbackLine.PreferredHeight + 8)
     $your = [string](Get-ObjectPropertyValue $Payload 'YourAnswer' '')
-    if ($your) { Add-WordResultLine $card ("你的回答：{0}" -f $your) 278 $script:UiMutedColor 14 | Out-Null }
+    if ($your) {
+        $yourLine = Add-WordResultLine $card ("你的回答：{0}" -f $your) $y $script:UiMutedColor 15
+        $y += [Math]::Max(26, $yourLine.PreferredHeight + 6)
+    }
     $btn = New-UiButton -Text '继续' -Width 180 -OnClick {
         $s = $script:WordUi.Session
         $step = [string](Get-ObjectPropertyValue $s 'step' 'meaning')
@@ -490,8 +500,10 @@ function Show-WordFeedbackView {
             Continue-WordOrFinish
         }
     }
-    $btn.Location = New-Object System.Drawing.Point(20, 330)
+    $btn.Location = New-Object System.Drawing.Point(20, $y)
     $card.Controls.Add($btn)
+    $card.Height = [Math]::Max(420, $y + 70)
+    Reset-ContentScroll
 }
 
 function Add-WordReviewBatch {
@@ -525,6 +537,27 @@ function Continue-WordOrFinish {
     Complete-WordSessionUi -PlanComplete
 }
 
+function Save-WordRoundHistory {
+    param($Session)
+    if ($null -eq $Session) { return }
+    $histDir = Get-CET4Path (Get-ConfigValue 'paths.history' 'data/history')
+    if (-not (Test-Path -LiteralPath $histDir)) { New-Item -ItemType Directory -Force -Path $histDir | Out-Null }
+    $payload = [ordered]@{
+        version = 1
+        kind = 'words'
+        date = [string](Get-ObjectPropertyValue $Session 'date' (Get-TodayString))
+        startedAt = [string](Get-ObjectPropertyValue $Session 'startedAt' '')
+        completedAt = (Get-Date).ToString('o')
+        summary = Get-ObjectPropertyValue $Session 'summary' $null
+        currentIndex = [int](Get-ObjectPropertyValue $Session 'index' 0)
+        plan = @(Get-ObjectPropertyValue $Session 'plan' @())
+        results = @(Get-ObjectPropertyValue $Session 'results' @())
+    }
+    $name = 'word-{0}-{1}.json' -f (Get-ObjectPropertyValue $Session 'date' (Get-TodayString)), (Get-Date).ToString('HHmmss')
+    Write-JsonFile (Join-Path $histDir $name) $payload
+    Write-JsonFile (Join-Path $histDir 'latest-word.json') $payload
+}
+
 function Complete-WordSessionUi {
     param([switch]$Expired, [switch]$PlanComplete)
     $s = $script:WordUi.Session
@@ -543,6 +576,7 @@ function Complete-WordSessionUi {
     Set-ObjectPropertyValue $s 'summary' ([ordered]@{ done = $summary.Done; mastered = $summary.Mastered; fuzzy = $summary.Fuzzy; unmastered = $summary.Unmastered; baseAwarded = $markBase })
     Set-ObjectPropertyValue $s 'baseAwarded' $markBase
     Save-WordSession $s
+    try { Save-WordRoundHistory -Session $s } catch { Write-CET4Log -Category 'words' -Level 'WARN' -Message ('保存单词学习记录失败: ' + (Format-SafeError $_)) }
     if ($markBase) {
         try {
             Add-WordCheckin -Date ([string](Get-ObjectPropertyValue $s 'date' (Get-TodayString))) -Minutes ([int](Get-ConfigValue 'wordSession.minutes' 30)) -WordsDone $summary.Done
@@ -586,14 +620,18 @@ function Show-WordStep {
 
     $headText = if ($mode -eq 'review') { '错词复习 · ' + $word } else { '新词 · ' + $word }
     $tag = if ($group -eq 'recognition') { '认识词：今天只要求英译中' } elseif ($group -eq 'review') { '复习词：先认出意思' } else { '核心词：英译中 + 中译英 + 造句' }
-    Add-WordResultLine $card $headText 16 $script:UiPrimaryDark 22 | Out-Null
-    Add-WordResultLine $card $tag 54 $script:UiAccent 13 | Out-Null
+    $y = 18
+    $headLabel = Add-WordResultLine $card $headText $y $script:UiPrimaryDark 23
+    $y += [Math]::Max(34, $headLabel.PreferredHeight + 8)
+    $tagLabel = Add-WordResultLine $card $tag $y $script:UiAccent 14
+    $y += [Math]::Max(28, $tagLabel.PreferredHeight + 8)
     $box = New-Object System.Windows.Forms.RichTextBox
-    $box.Location = New-Object System.Drawing.Point(20, 90)
-    $box.Width = 910; $box.Height = 118; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
-    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241)
+    $box.Location = New-Object System.Drawing.Point(20, $y)
+    $box.Width = 1010; $box.Height = 128; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box ([string](Get-ObjectPropertyValue $sentence 'en' '')) $word
     $card.Controls.Add($box)
+    $y += 142
     $prompt = ''
     $showTextBox = $true
     if ($step -eq 'meaning') {
@@ -608,16 +646,17 @@ function Show-WordStep {
         Show-WordFeedbackView -Session $s -Entry $entry -Step ($step -replace '_feedback$','') -Payload $payload
         return
     }
-    Add-WordResultLine $card $prompt 225 $script:UiTextColor 17 | Out-Null
-    Add-WordResultLine $card ("提示：{0}" -f $tag) 262 $script:UiMutedColor 13 | Out-Null
+    $promptLabel = Add-WordResultLine $card $prompt $y $script:UiTextColor 18
+    $y += [Math]::Max(36, $promptLabel.PreferredHeight + 10)
     $input = New-Object System.Windows.Forms.TextBox
-    $input.Location = New-Object System.Drawing.Point(20, 292)
-    $input.Width = 910
-    $input.Height = 64
+    $input.Location = New-Object System.Drawing.Point(20, $y)
+    $input.Width = 1010
+    $input.Height = 68
     $input.Multiline = $true
-    $input.Font = New-Object System.Drawing.Font($script:UiFontName, 17)
+    $input.Font = New-Object System.Drawing.Font($script:UiFontName, 18)
     $input.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
     $card.Controls.Add($input)
+    $y += 82
     $submit = New-UiButton -Text '提交给老师' -Width 200 -OnClick {
         $s = $script:WordUi.Session
         $entry = Get-WordEntryFromSession $s
@@ -700,7 +739,7 @@ function Show-WordStep {
             Show-WordStep
         }
     }
-    $submit.Location = New-Object System.Drawing.Point(20, 370)
+    $submit.Location = New-Object System.Drawing.Point(20, $y)
     $card.Controls.Add($submit)
     $skip = New-UiButton -Text '先跳过（进复习）' -Width 200 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:WordUi.Session
@@ -709,9 +748,11 @@ function Show-WordStep {
         Advance-WordSession $s
         Continue-WordOrFinish
     }
-    $skip.Location = New-Object System.Drawing.Point(235, 370)
+    $skip.Location = New-Object System.Drawing.Point(235, $y)
     $card.Controls.Add($skip)
+    $card.Height = [Math]::Max(520, $y + 72)
     $script:WordUi.Input = $input
+    Reset-ContentScroll
     $input.Focus()
 }
 
@@ -738,23 +779,23 @@ function Show-WordPage {
     Clear-ContentPanel
     $head = New-PageHeader '单词 30 分钟' '先读句子猜意思；核心词再做中译英和造句。到点自动收尾。'
     $script:ContentPanel.Controls.Add($head)
-    $statusCard = New-UiCard -Width 960 -Height 74
-    $statusCard.Location = New-Object System.Drawing.Point(0, 100)
+    $statusCard = New-UiCard -Width 1060 -Height 74
+    $statusCard.Location = New-Object System.Drawing.Point(0, 112)
     $script:ContentPanel.Controls.Add($statusCard)
-    $timerLabel = New-UiLabel -Text '30:00' -Size 22 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $timerLabel = New-UiLabel -Text '30:00' -Size 24 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
     $timerLabel.Location = New-Object System.Drawing.Point(20, 15)
     $statusCard.Controls.Add($timerLabel)
-    $progressLabel = New-UiLabel -Text '' -Size 15 -Color $script:UiMutedColor
+    $progressLabel = New-UiLabel -Text '' -Size 16 -Color $script:UiMutedColor
     $progressLabel.Location = New-Object System.Drawing.Point(210, 23)
     $statusCard.Controls.Add($progressLabel)
     $audioLabel = New-UiLabel -Text '' -Size 13 -Color $script:UiMutedColor
-    $audioLabel.Location = New-Object System.Drawing.Point(650, 25)
+    $audioLabel.Location = New-Object System.Drawing.Point(735, 28)
     $statusCard.Controls.Add($audioLabel)
     $tempCount = [int](Get-ObjectPropertyValue $session 'tempCount' 0)
     $audioLabel.Text = if ($tempCount -gt 0) { "听力临时文件 $tempCount 个" } else { '今日暂无听力临时文件' }
 
-    $card = New-UiCard -Width 960 -Height 500
-    $card.Location = New-Object System.Drawing.Point(0, 190)
+    $card = New-UiCard -Width 1060 -Height 500
+    $card.Location = New-Object System.Drawing.Point(0, 208)
     $script:ContentPanel.Controls.Add($card)
     $exit = New-UiButton -Text '保存并退出' -Width 170 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:WordUi.Session
@@ -765,7 +806,7 @@ function Show-WordPage {
         Stop-PageTimer
         Show-HomePage
     }
-    $exit.Location = New-Object System.Drawing.Point(760, 0)
+    $exit.Location = New-Object System.Drawing.Point(866, 2)
     $head.Controls.Add($exit)
 
     $script:WordUi = [pscustomobject]@{ Session = $session; Card = $card; TimerLabel = $timerLabel; ProgressLabel = $progressLabel; Input = $null; EndsAt = $null }
