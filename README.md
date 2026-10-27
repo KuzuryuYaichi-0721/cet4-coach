@@ -13,7 +13,7 @@
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.0.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 懒人包：[CET4Coach v1.1.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
 
 > 重要数据诚实说明：`o-Sakurajimamai-o/cet-practice` 的仓库里没有题库 JSON，题库实际在 Release 包的 `seed/cet6.db`（含 CET4 行）。本系统从 **v1.1.0 Windows 发布包** 中读取该 SQLite，按真实字段导入。2020—2025 年 CET4 去重后只有 **1,668 道唯一客观题**，其中仔细阅读+听力篇章 **620 道**；这与“90 天 × 20 题 = 1,800 个题位、重点 1,080 个题位”不一致。系统不伪造题目，使用 7 天后可重出的间隔复习规则补足题位，并把缺口写进 [gap_report.json](data/gap_report.json) 与 [import_report.json](data/import_report.json)。
