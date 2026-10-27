@@ -303,7 +303,7 @@ function Add-ProgressToolsCard {
     $clearBtn = New-UiButton -Text '清空今日学习进度' -Width 220 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(179, 38, 30)) -ForeColor ([System.Drawing.Color]::White) -OnClick {
         $today = (Get-Date).ToString('yyyy-MM-dd')
         $r = [System.Windows.Forms.MessageBox]::Show(
-            ("只清空 $today 的学习记录：`n`n- 今天的 20 题/单词会话和计划`n- 今天的打卡`n- 今天新建的错题`n- 今天的已做记录`n`n历史记录、单词累计掌握状态会保留。`n`n清空前会自动把今天的相关记录备份到 backup 目录，之后仍可恢复。确定继续吗？"),
+            ("只清空 $today 的学习记录：`n`n- 今天的 20 题/单词会话和计划`n- 今天的打卡`n- 今天新建的错题`n- 今天的已做记录`n`n历史记录、已复习过的单词状态会保留。`n`n清空前会自动把今天的相关记录备份到 backup 目录，之后仍可恢复。确定继续吗？"),
             '清空今日学习进度',
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Warning,
@@ -311,7 +311,7 @@ function Add-ProgressToolsCard {
         if ($r -ne [System.Windows.Forms.DialogResult]::Yes) { return }
         try {
             $res = Clear-TodayProgress
-            Show-AppMessage ("已清空 $($res.Date) 的学习进度。`n`n会话：$($res.Counts.sessions) 个`n计划：$($res.Counts.plans) 个`n历史：$($res.Counts.history) 个`n打卡：$($res.Counts.checkins) 天`n新建错题：$($res.Counts.wrongbook) 条`n已做记录：$($res.Counts.seen) 条`n`n自动备份：$($res.Backup)") '清空今日学习进度'
+            Show-AppMessage ("已清空 $($res.Date) 的学习进度。`n`n会话：$($res.Counts.sessions) 个`n计划：$($res.Counts.plans) 个`n历史：$($res.Counts.history) 个`n打卡：$($res.Counts.checkins) 天`n新建错题：$($res.Counts.wrongbook) 条`n已做记录：$($res.Counts.seen) 条`n今天新学单词：$($res.Counts.words) 个`n`n自动备份：$($res.Backup)") '清空今日学习进度'
             Show-SettingsPage
         } catch {
             Show-AppMessage ('清空失败：' + (Format-SafeError $_)) '清空今日学习进度' ([System.Windows.Forms.MessageBoxIcon]::Warning)

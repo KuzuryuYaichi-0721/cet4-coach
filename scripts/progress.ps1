@@ -542,7 +542,7 @@ function Clear-TodayProgress {
         }
     }
 
-    $counts = [ordered]@{ sessions = 0; plans = 0; history = 0; checkins = 0; wrongbook = 0; seen = 0 }
+    $counts = [ordered]@{ sessions = 0; plans = 0; history = 0; checkins = 0; wrongbook = 0; seen = 0; words = 0 }
 
     foreach ($sub in @('data/sessions','data/plans','data/history')) {
         $dir = Get-CET4Path $sub
@@ -553,6 +553,40 @@ function Clear-TodayProgress {
                 if ($sub -like '*sessions*') { $counts.sessions++ }
                 elseif ($sub -like '*plans*') { $counts.plans++ }
                 else { $counts.history++ }
+            }
+        }
+    }
+
+    $wordPath = Get-CET4Path 'data/word_progress.json'
+    if (Test-Path -LiteralPath $wordPath) {
+        $wp = Read-JsonFile $wordPath $null -Quiet
+        if ($wp) {
+            $status = Get-ObjectPropertyValue $wp 'status' $null
+            $todayWords = @()
+            if ($status) {
+                foreach ($prop in @($status.PSObject.Properties)) {
+                    $entry = $prop.Value
+                    $rawSeen = Get-ObjectPropertyValue $entry 'lastSeen' ''
+                    $seenDate = ''
+                    if ($rawSeen -is [datetime]) { $seenDate = $rawSeen.ToString('yyyy-MM-dd') }
+                    elseif ($rawSeen) {
+                        $txt = [string]$rawSeen
+                        if ($txt.Length -ge 10) { $seenDate = $txt.Substring(0, 10) }
+                    }
+                    $sessions = [int](Get-ObjectPropertyValue $entry 'sessions' 0)
+                    if ($seenDate -eq $today -and $sessions -le 1) {
+                        $todayWords += [string]$prop.Name
+                        $status.PSObject.Properties.Remove($prop.Name)
+                    }
+                }
+            }
+            if ($todayWords.Count -gt 0) {
+                $introduced = @(Get-ObjectPropertyValue $wp 'introduced' @() | Where-Object { $todayWords -notcontains [string]$_ })
+                $review = @(Get-ObjectPropertyValue $wp 'reviewQueue' @() | Where-Object { $todayWords -notcontains [string]$_ })
+                Set-ObjectPropertyValue $wp 'introduced' $introduced
+                Set-ObjectPropertyValue $wp 'reviewQueue' $review
+                $counts.words = $todayWords.Count
+                Write-JsonFile $wordPath $wp
             }
         }
     }
