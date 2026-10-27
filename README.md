@@ -9,6 +9,8 @@
 
 **第一次用，先看 [从今天开始：90 天学习路线](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
 
+**详细使用手册：** [CET4Coach 详细使用手册 PDF](docs/CET4Coach-User-Manual.zh-CN.pdf)（26 页，覆盖桌面启动、单词/刷题、听力整理、打卡、导入、排错和 90 天路线）。
+
 ## 下载
 
 - 懒人包：[CET4Coach v1.0.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
