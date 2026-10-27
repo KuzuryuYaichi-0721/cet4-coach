@@ -81,7 +81,7 @@
 - `Get-SelectedQuizOption`、`Get-QuizSessionAnsweredCount`、`Get-QuizScoreSummary`。
 - `Invoke-QuizEvaluation`：严格 JSON；失败本地降级。
 - `Get-QuizTeacherFeedback`、`Get-LocalTeacherFeedback`、`Get-FeedbackText`。
-- `Show-QuizFeedback`：结果、理由质量、错误类型、老师讲解、技巧、下一题。
+- `Show-QuizFeedback`：结果、理由质量、错误类型、大肥鱼讲解、技巧、下一题。
 - `Complete-QuizRound`：超时/完成；未答标记 incomplete 进复习；20 题完成才加刷题打卡；清理临时音频。
 
 ### import.ps1

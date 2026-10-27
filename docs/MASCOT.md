@@ -1,4 +1,4 @@
-﻿# 大肥鱼（DeepSeek 鲸鱼娘）
+# 大肥鱼（DeepSeek 鲸鱼娘）
 
 ## 形象来源
 
@@ -11,7 +11,6 @@
 | `assets/mascot/fish-think.png` | 第 4 张（“正在思考……”） | 判断、生成讲解、加载 |
 | `assets/mascot/fish-encourage.png` | 第 5 张（趴桌睡着） | 答错、累了、复习提醒 |
 | `assets/mascot/fish-fullbody.png` | 第 3 张（夜景全身） | 侧栏下方完整立绘 |
-| `assets/mascot/fish-reading.png` | 第 1 张（床上看书） | 备用阅读/休息横幅 |
 | `assets/mascot/source/` | 你提供的 6 张原图 | 保留源图，便于重新裁切 |
 
 `fish-night.png` 对应第 6 张夜景电脑图，暂未放入主界面，保留备用。

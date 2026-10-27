@@ -1,4 +1,5 @@
-﻿from docx import Document
+﻿from pathlib import Path
+from docx import Document
 from docx.shared import Cm, Pt, RGBColor, Emu
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
@@ -17,7 +18,7 @@ LIGHT_GREEN = "E7F3EC"
 LIGHT_ORANGE = "FFF2CC"
 CODE_BG = "F3F0E7"
 
-OUT = r"CET4Coach-FishTeacher/docs/CET4Coach-User-Manual.zh-CN.docx"
+OUT = str(Path(__file__).resolve().parent.parent / "docs" / "CET4Coach-User-Manual.zh-CN.docx")
 
 _numbered_count = 0
 _last_block = "other"
