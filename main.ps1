@@ -45,9 +45,9 @@ $script:MainForm.Add_Shown({
             Show-HomePage
         }
         if (-not (Test-DeepSeekKeyPresent)) {
-            $keyMsg = "没有检测到 DEEPSEEK_API_KEY。`n`n程序不会调用大模型，单词和刷题仍可用本地判断继续。`n`n设置方法：在 PowerShell 里运行`nsetx DEEPSEEK_API_KEY `"你的Key`"`n然后关掉本程序重新打开。`n`nAPI Key 只会从环境变量读取，不会写进 config、日志或提示词。"
-            Show-AppMessage ($keyMsg -replace "`n", [Environment]::NewLine) '还没有设置 API Key' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            Write-CET4Log -Category 'startup' -Level 'INFO' -Message '未设置 DEEPSEEK_API_KEY；使用本地判断。'
         }
+        Show-StartupProgressDialog
     } catch {
         Show-AppMessage ('启动页面失败：' + (Format-SafeError $_)) '启动' ([System.Windows.Forms.MessageBoxIcon]::Error)
     }
@@ -62,6 +62,7 @@ try {
     } catch { }
 } finally {
     try { Stop-OwnPotPlayer } catch { }
+    try { Stop-OwnMediaPlayer } catch { }
     try { if ($script:OnLeavePage) { & $script:OnLeavePage } } catch { }
     try { Close-UiProgress } catch { }
 }

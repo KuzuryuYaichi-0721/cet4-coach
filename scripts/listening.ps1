@@ -771,35 +771,117 @@ function Clear-OldListeningTemp {
     return $removed
 }
 
-function Start-ListeningPlayback {
-    param([Parameter(Mandatory)][string]$Path)
-    if (-not (Test-Path -LiteralPath $Path)) { throw "找不到要播放的临时音频：$Path" }
-    $player = Resolve-PotPlayerPath
-    if (-not $player) {
-        throw '没有找到 PotPlayer。请安装 PotPlayer，或在 config.json 的 listening.potPlayer 里填写 PotPlayerMini64.exe 的完整路径。'
+function Get-ListeningPlayerBackend {
+    $v = [string](Get-ConfigValue 'listening.player' 'builtin')
+    if ([string]::IsNullOrWhiteSpace($v)) { $v = 'builtin' }
+    return $v.ToLowerInvariant()
+}
+
+function Resolve-WindowsMediaPlayerPath {
+    foreach ($p in @(
+        (Join-Path $env:ProgramFiles 'Windows Media Player\wmplayer.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Windows Media Player\wmplayer.exe')
+    )) {
+        if ($p -and (Test-Path -LiteralPath $p)) { return $p }
     }
-    Stop-OwnPotPlayer
-    $proc = Start-Process -FilePath $player -ArgumentList @(('"' + $Path + '"'), '/close') -PassThru
-    $script:ActivePotPlayerPid = $proc.Id
-    $script:ActivePotPlayerPath = $player
-    return $proc
+    return $null
 }
 
-function Stop-OwnPotPlayer {
-    $pidToStop = $script:ActivePotPlayerPid
-    $playerPath = $script:ActivePotPlayerPath
-    $script:ActivePotPlayerPid = $null
-    if (-not $pidToStop) { return }
+function Show-PotPlayerDownloadPrompt {
+    $text = "没有检测到 PotPlayer。`n`n是否打开官方下载页？`n`n选择 否 会自动改用系统内置播放器，不影响听力播放。"
+    $r = [System.Windows.Forms.MessageBox]::Show($text, '听力播放器', [System.Windows.Forms.MessageBoxButtons]::YesNoCancel, [System.Windows.Forms.MessageBoxIcon]::Question)
+    if ($r -eq [System.Windows.Forms.DialogResult]::Yes) {
+        try { Start-Process 'https://potplayer.daum.net/' | Out-Null } catch { }
+        return 'download'
+    }
+    if ($r -eq [System.Windows.Forms.DialogResult]::No) { return 'builtin' }
+    return 'cancel'
+}
+
+function Start-ListeningPlayback {
+    param([Parameter(Mandatory)][string]$Path, [string]$ForceBackend = '', [switch]$DeleteAfterPlay)
+    if (-not (Test-Path -LiteralPath $Path)) { throw "找不到要播放的音频：$Path" }
+    $backend = if ($ForceBackend) { $ForceBackend.ToLowerInvariant() } else { Get-ListeningPlayerBackend }
+    if ($backend -eq 'auto') {
+        $backend = if (Resolve-PotPlayerPath) { 'potplayer' } else { 'builtin' }
+    }
+    if ($backend -eq 'potplayer') {
+        $player = Resolve-PotPlayerPath
+        if (-not $player) {
+            $choice = Show-PotPlayerDownloadPrompt
+            if ($choice -eq 'builtin') { return (Start-ListeningPlayback -Path $Path -ForceBackend 'builtin' -DeleteAfterPlay:$DeleteAfterPlay) }
+            if ($choice -eq 'download') { throw '已打开 PotPlayer 下载页。安装后回到设置里选择 PotPlayer，或直接用内置播放器。' }
+            throw '已取消播放。'
+        }
+        Stop-OwnPotPlayer
+        $proc = Start-Process -FilePath $player -ArgumentList @(('"' + $Path + '"'), '/close') -PassThru
+        $script:ActivePotPlayerPid = $proc.Id
+        $script:ActivePotPlayerPath = $player
+        return [pscustomobject]@{ Kind = 'potplayer'; Process = $proc; Player = $player; Path = $Path }
+    }
+    if ($backend -eq 'wmplayer') {
+        $player = Resolve-WindowsMediaPlayerPath
+        if (-not $player) {
+            Write-CET4Log -Category 'listening' -Level 'WARN' -Message '没有找到 Windows Media Player，改用内置播放器。'
+            return (Start-ListeningPlayback -Path $Path -ForceBackend 'builtin' -DeleteAfterPlay:$DeleteAfterPlay)
+        }
+        Stop-OwnPotPlayer
+        $proc = Start-Process -FilePath $player -ArgumentList @(('"' + $Path + '"')) -PassThru
+        return [pscustomobject]@{ Kind = 'wmplayer'; Process = $proc; Player = $player; Path = $Path }
+    }
+    if ($backend -eq 'custom') {
+        $player = [string](Get-ConfigValue 'listening.customPlayer' '')
+        if (-not $player -or -not (Test-Path -LiteralPath $player)) {
+            throw '没有设置有效的自定义播放器路径。请在“设置与诊断 → 听力播放器”里填写。'
+        }
+        Stop-OwnPotPlayer
+        $proc = Start-Process -FilePath $player -ArgumentList @(('"' + $Path + '"')) -PassThru
+        return [pscustomobject]@{ Kind = 'custom'; Process = $proc; Player = $player; Path = $Path }
+    }
+    if ($backend -eq 'default') {
+        Stop-OwnPotPlayer
+        $proc = Start-Process -FilePath $Path -PassThru
+        return [pscustomobject]@{ Kind = 'default'; Process = $proc; Player = ''; Path = $Path }
+    }
+
+    # 内置播放器：不依赖 PotPlayer / Windows Media Player，直接播放本地 WAV/MP3。
+    Add-Type -AssemblyName PresentationCore
+    Stop-OwnMediaPlayer
+    $mp = New-Object System.Windows.Media.MediaPlayer
+    $mp.Volume = 1.0
+    $mp.Open((New-Object System.Uri($Path)))
+    $script:ActiveMediaPlayer = $mp
+    $script:ActiveMediaPlayerPath = $Path
+    $script:ActiveMediaPlayerDelete = [bool]$DeleteAfterPlay
+    $mp.Add_MediaEnded({
+        try { if ($script:ActiveMediaPlayer) { $script:ActiveMediaPlayer.Close() } } catch { }
+        try { if ($script:ActiveMediaPlayerDelete -and $script:ActiveMediaPlayerPath -and (Test-Path -LiteralPath $script:ActiveMediaPlayerPath)) { Remove-Item -LiteralPath $script:ActiveMediaPlayerPath -Force -ErrorAction SilentlyContinue } } catch { }
+        $script:ActiveMediaPlayer = $null; $script:ActiveMediaPlayerPath = $null
+    })
+    $mp.Add_MediaFailed({
+        try { if ($script:ActiveMediaPlayer) { $script:ActiveMediaPlayer.Close() } } catch { }
+        $script:ActiveMediaPlayer = $null; $script:ActiveMediaPlayerPath = $null
+    })
+    $mp.Play()
+    return [pscustomobject]@{ Kind = 'builtin'; Process = $null; Player = $mp; Path = $Path }
+}
+
+function Stop-OwnMediaPlayer {
     try {
-        $p = Get-Process -Id $pidToStop -ErrorAction Stop
-        $ok = $true
-        try {
-            if ($playerPath -and $p.Path -and ($p.Path -ne $playerPath)) { $ok = $false }
-        } catch { }
-        if ($ok) { Stop-Process -Id $pidToStop -Force -ErrorAction SilentlyContinue }
+        $path = $script:ActiveMediaPlayerPath
+        $del = [bool]$script:ActiveMediaPlayerDelete
+        if ($script:ActiveMediaPlayer) {
+            $script:ActiveMediaPlayer.Stop()
+            $script:ActiveMediaPlayer.Close()
+        }
+        if ($del -and $path -and (Test-Path -LiteralPath $path)) {
+            Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+        }
     } catch { }
+    $script:ActiveMediaPlayer = $null
+    $script:ActiveMediaPlayerPath = $null
+    $script:ActiveMediaPlayerDelete = $false
 }
-
 function Get-NeededAudioFromPlan {
     param($Plan)
     $needed = @()

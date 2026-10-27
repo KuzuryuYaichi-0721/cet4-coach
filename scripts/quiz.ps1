@@ -682,8 +682,8 @@ function Show-QuizQuestion {
                 }
             }
             try {
-                $proc = Start-ListeningPlayback -Path $path
-                if ($src -ne '原音频') { Register-ListeningFileCleanup -Path $path -ProcessId ([int]$proc.Id) }
+                $playback = Start-ListeningPlayback -Path $path -DeleteAfterPlay:($src -ne '原音频')
+                if ($src -ne '原音频' -and $playback.Process) { Register-ListeningFileCleanup -Path $path -ProcessId ([int]$playback.Process.Id) }
                 $cur.replayCount = [int](Get-ObjectPropertyValue $cur 'replayCount' 0) + 1
                 Set-ObjectPropertyValue $cur 'replayCount' $cur.replayCount
                 Set-ObjectPropertyValue $s 'current' $cur

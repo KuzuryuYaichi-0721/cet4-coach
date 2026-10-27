@@ -1,6 +1,6 @@
 {
   "appName": "四级教练 · 大肥鱼版",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "llm": {
     "provider": "deepseek",
     "baseUrl": "https://api.deepseek.com",
@@ -41,6 +41,8 @@
   "listening": {
     "ffmpeg": "ffmpeg",
     "ffprobe": "ffprobe",
+    "player": "builtin",
+    "customPlayer": "",
     "potPlayer": "auto",
     "potPlayerCandidates": [
       "C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe",

@@ -258,7 +258,7 @@ function Show-HomePage {
 
 function Add-ProgressToolsCard {
     $progressCard = New-UiCard -Width $script:UiContentWidth -Height 250
-    $progressCard.Location = New-Object System.Drawing.Point(0, 720)
+    $progressCard.Location = New-Object System.Drawing.Point(0, 1050)
     $script:ContentPanel.Controls.Add($progressCard)
     $pt = New-UiLabel -Text '学习进度包（跨版本 / 换电脑）' -Size 21 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
     $pt.Location = New-Object System.Drawing.Point(20, 16)
@@ -303,6 +303,55 @@ function Add-ProgressToolsCard {
     $ppath = New-UiLabel -Text ('自动进度文件：' + (Get-PortableProgressPath)) -Size 12 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $ppath.Location = New-Object System.Drawing.Point(20, 198)
     $progressCard.Controls.Add($ppath)
+}
+
+function Add-PlayerSettingsCard {
+    $card = New-UiCard -Width $script:UiContentWidth -Height 250
+    $card.Location = New-Object System.Drawing.Point(0, 720)
+    $script:ContentPanel.Controls.Add($card)
+    $t = New-UiLabel -Text '听力播放器' -Size 21 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $t.Location = New-Object System.Drawing.Point(20, 14); $card.Controls.Add($t)
+    $d = New-UiLabel -Text '内置播放器不依赖外部程序，兼容 WAV/MP3；也可以选 PotPlayer、Windows Media Player、系统默认或自定义程序。选 PotPlayer 但未安装时，播放前会询问是否打开下载页。' -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
+    $d.Location = New-Object System.Drawing.Point(20, 52); $card.Controls.Add($d)
+    $values = @('builtin','potplayer','wmplayer','default','custom')
+    $names = @('内置播放器（推荐）','PotPlayer','Windows Media Player','系统默认程序','自定义程序')
+    $combo = New-Object System.Windows.Forms.ComboBox
+    $combo.DropDownStyle = 'DropDownList'
+    foreach ($n in $names) { [void]$combo.Items.Add($n) }
+    $cur = [string](Get-ConfigValue 'listening.player' 'builtin')
+    $idx = [Array]::IndexOf($values, $cur); if ($idx -lt 0) { $idx = 0 }
+    $combo.SelectedIndex = $idx
+    $combo.Location = New-Object System.Drawing.Point(20, 100)
+    $combo.Width = 280; $combo.Height = 34
+    $combo.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 12)
+    $card.Controls.Add($combo)
+    $custom = New-Object System.Windows.Forms.TextBox
+    $custom.Text = [string](Get-ConfigValue 'listening.customPlayer' '')
+    $custom.Location = New-Object System.Drawing.Point(318, 100)
+    $custom.Width = 460; $custom.Height = 32
+    $custom.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 11)
+    $card.Controls.Add($custom)
+    $browse = New-UiButton -Text '浏览…' -Width 90 -Height 34 -Size 13 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark -OnClick {
+        $dlg = New-Object System.Windows.Forms.OpenFileDialog
+        $dlg.Filter = '播放器 (*.exe)|*.exe|所有文件 (*.*)|*.*'
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $custom.Text = $dlg.FileName; $combo.SelectedIndex = 4 }
+    }
+    $browse.Location = New-Object System.Drawing.Point(790, 100); $card.Controls.Add($browse)
+    $save = New-UiButton -Text '保存播放器设置' -Width 210 -Height 44 -Size 14 -OnClick {
+        try {
+            $cfg = Read-JsonFile (Get-CET4Path 'config.json') ([pscustomobject]@{})
+            $listen = Get-ObjectPropertyValue $cfg 'listening' $null
+            if ($null -eq $listen) { $listen = [pscustomobject]@{}; Set-ObjectPropertyValue $cfg 'listening' $listen }
+            Set-ObjectPropertyValue $listen 'player' $values[$combo.SelectedIndex]
+            Set-ObjectPropertyValue $listen 'customPlayer' $custom.Text.Trim()
+            Write-JsonFile (Get-CET4Path 'config.json') $cfg
+            $script:Config = $cfg
+            Show-AppMessage ('播放器已保存：' + $names[$combo.SelectedIndex]) '听力播放器'
+        } catch { Show-AppMessage ('保存失败：' + (Format-SafeError $_)) '听力播放器' ([System.Windows.Forms.MessageBoxIcon]::Warning) }
+    }
+    $save.Location = New-Object System.Drawing.Point(20, 165); $card.Controls.Add($save)
+    $hint = New-UiLabel -Text $(if (Resolve-PotPlayerPath) { '已检测到 PotPlayer。' } else { '当前未检测到 PotPlayer；选择它时播放前会询问是否下载。' }) -Size 13 -Color $script:UiMutedColor -MaxWidth 600
+    $hint.Location = New-Object System.Drawing.Point(250, 172); $card.Controls.Add($hint)
 }
 
 function Show-SettingsPage {
@@ -364,6 +413,7 @@ function Show-SettingsPage {
     $course = New-UiButton -Text '重看入门微课' -Width 180 -Height 46 -Size 15 -BackColor $script:UiAccent -OnClick { Show-CoursePage -FromMenu }
     $course.Location = New-Object System.Drawing.Point(465, $buttonY)
     $card.Controls.Add($course)
+    Add-PlayerSettingsCard
     Add-ProgressToolsCard
     Set-StatusBar '环境检查不会上传任何文件。'
     Reset-ContentScroll
@@ -523,4 +573,46 @@ function Show-ListeningPage {
     $missingCard.Controls.Add($ml)
     Set-StatusBar '整理过程不会删除原始素材。'
     Reset-ContentScroll
+}
+
+function Show-StartupProgressDialog {
+    try { Write-CET4Log -Category 'startup' -Level 'INFO' -Message '显示进度提醒' } catch { }
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = '学习进度提醒'
+    $form.Size = New-Object System.Drawing.Size(780, 470)
+    $form.StartPosition = 'CenterParent'
+    $form.FormBorderStyle = 'FixedDialog'
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
+    $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10)
+    $pic = New-MascotPicture 'happy' 150
+    if ($pic) { $pic.Location = New-Object System.Drawing.Point(28, 45); $form.Controls.Add($pic) }
+    $title = New-UiLabel -Text '先存一下今天的进度吧' -Size 25 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $title.Location = New-Object System.Drawing.Point(205, 38); $form.Controls.Add($title)
+    $desc = New-UiLabel -Text '每次打开都会提醒一次：学习记录会自动保存到本机 data 目录。换电脑、重装或更新前，建议把整个 data 文件夹复制到 U 盘或网盘。' -Size 15 -Color $script:UiTextColor -MaxWidth 520
+    $desc.Location = New-Object System.Drawing.Point(208, 88); $form.Controls.Add($desc)
+    $path = New-UiLabel -Text ('进度包：' + (Get-PortableProgressPath)) -Size 12 -Color $script:UiMutedColor -MaxWidth 520
+    $path.Location = New-Object System.Drawing.Point(208, 175); $form.Controls.Add($path)
+    $tip = New-UiLabel -Text '也可以点“设置与诊断 → 学习进度包”导出/导入。' -Size 13 -Color $script:UiMutedColor -MaxWidth 520
+    $tip.Location = New-Object System.Drawing.Point(208, 205); $form.Controls.Add($tip)
+    $status = New-UiLabel -Text '' -Size 13 -Color $script:UiGood -MaxWidth 500
+    $status.Location = New-Object System.Drawing.Point(208, 242); $form.Controls.Add($status)
+    $save = New-UiButton -Text '立即保存进度' -Width 180 -Height 46 -Size 15 -OnClick {
+        try {
+            $r = Save-DailyProgress -Silent
+            $status.Text = '已保存：' + $r.Package
+        } catch { $status.Text = '保存失败：' + (Format-SafeError $_) }
+    }
+    $save.Location = New-Object System.Drawing.Point(30, 350); $form.Controls.Add($save)
+    $open = New-UiButton -Text '打开 data 文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+        try { Start-Process explorer.exe (Get-CET4Path 'data') } catch { }
+    }
+    $open.Location = New-Object System.Drawing.Point(225, 350); $form.Controls.Add($open)
+    $close = New-UiButton -Text '关闭' -Width 130 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(232, 235, 240)) -ForeColor $script:UiTextColor -OnClick { $form.Close() }
+    $close.Location = New-Object System.Drawing.Point(620, 350); $form.Controls.Add($close)
+    $form.AcceptButton = $close
+    $form.CancelButton = $close
+    [void]$form.ShowDialog()
+    try { Write-CET4Log -Category 'startup' -Level 'INFO' -Message '关闭进度提醒' } catch { }
 }
