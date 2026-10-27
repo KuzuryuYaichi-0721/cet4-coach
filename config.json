@@ -1,6 +1,6 @@
 {
   "appName": "四级教练 · 大肥鱼版",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "llm": {
     "provider": "deepseek",
     "baseUrl": "https://api.deepseek.com",

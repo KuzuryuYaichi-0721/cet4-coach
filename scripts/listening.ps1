@@ -586,6 +586,35 @@ function New-ListeningDownloadedAudio {
     return $out
 }
 
+function New-ListeningLocalAudio {
+    param($Question)
+    $exe = Join-Path (Join-Path $script:CET4Root 'tools\espeak') 'espeak-ng.exe'
+    $data = Join-Path (Join-Path $script:CET4Root 'tools\espeak') 'espeak-ng-data'
+    if (-not (Test-Path -LiteralPath $exe) -or -not (Test-Path -LiteralPath $data)) { return $null }
+    $text = Get-QuestionTranscript $Question
+    if ([string]::IsNullOrWhiteSpace($text)) { return $null }
+    $dir = Join-Path (Get-ListeningTempDir) 'local-tts'
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    $stamp = (Get-Date).ToString('HHmmssfff')
+    $out = Join-Path $dir ('local-' + $stamp + '.wav')
+    $txt = Join-Path $dir ('local-' + $stamp + '.txt')
+    [IO.File]::WriteAllText($txt, $text, (New-Object Text.UTF8Encoding($false)))
+    $old = $env:ESPEAK_DATA_PATH
+    try {
+        $env:ESPEAK_DATA_PATH = $data
+        $p = Start-Process -FilePath $exe -ArgumentList @('-v','en-us','-s','145','-w',$out,'-f',$txt) -PassThru -Wait -WindowStyle Hidden
+        if ((Test-Path -LiteralPath $out) -and (Test-DownloadedAudioFile $out)) { return $out }
+        Write-CET4Log -Category 'listening' -Level 'WARN' -Message ('本地 eSpeak 未生成有效 WAV，退出码 ' + [string]$p.ExitCode)
+        return $null
+    } catch {
+        Write-CET4Log -Category 'listening' -Level 'WARN' -Message ('本地 eSpeak 合成失败: ' + (Format-SafeError $_))
+        return $null
+    } finally {
+        $env:ESPEAK_DATA_PATH = $old
+        Remove-Item -LiteralPath $txt -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Register-ListeningFileCleanup {
     param([string]$Path, [int]$ProcessId)
     if (-not $Path) { return }

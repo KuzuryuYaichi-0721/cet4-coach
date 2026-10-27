@@ -31,6 +31,7 @@
 
 - **ffmpeg / ffprobe**：<https://ffmpeg.org/>，用于整卷听力切分与时长读取。请遵守其 LGPL/GPL 许可。
 - **PotPlayer**：由 Kakao/DAUM 提供；本系统只调用本机已安装的程序，不附带其安装包。
+- **eSpeak NG**：<https://github.com/espeak-ng/espeak-ng>，GPL-3.0-or-later；`tools/espeak/` 内附精简 Windows 可执行文件与英语语音数据，仅用于本地生成听力 WAV。许可证全文见 `tools/espeak/COPYING.txt`。
 
 ## 个人数据
 
