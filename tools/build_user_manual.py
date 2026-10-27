@@ -1,4 +1,4 @@
-from docx import Document
+﻿from docx import Document
 from docx.shared import Cm, Pt, RGBColor, Emu
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
@@ -17,7 +17,7 @@ LIGHT_GREEN = "E7F3EC"
 LIGHT_ORANGE = "FFF2CC"
 CODE_BG = "F3F0E7"
 
-OUT = r"CET4Coach-github/docs/CET4Coach-User-Manual.zh-CN.docx"
+OUT = r"CET4Coach-FishTeacher/docs/CET4Coach-User-Manual.zh-CN.docx"
 
 _numbered_count = 0
 _last_block = "other"
@@ -252,12 +252,12 @@ add_footer_page_number(fp)
 for _ in range(2):
     doc.add_paragraph()
 p("CET4Coach", bold=True, color=GREEN, size=22, align=WD_ALIGN_PARAGRAPH.CENTER)
-p("四级教练 · 详细使用手册", bold=True, color=DARK, size=28, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
+p("大肥鱼版 · 详细使用手册", bold=True, color=DARK, size=28, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
 p("1500 高频词 · 20 题限时 · 错题画像 · 听力整理 · 可选 DeepSeek 讲解", size=11, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
 doc.add_paragraph()
 p("Windows 10 / 11  ·  本地运行  ·  PowerShell 5.1 / 7", size=10, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
 doc.add_paragraph()
-p("版本 1.1  ·  2026 年 10 月", size=10, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
+p("版本 1.2-fish  ·  2026 年 10 月", size=10, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
 doc.add_paragraph()
 p("项目地址：https://github.com/KuzuryuYaichi-0721/cet4-coach", size=9, color=ORANGE, align=WD_ALIGN_PARAGRAPH.CENTER)
 p("下载地址：https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest", size=9, color=ORANGE, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -396,6 +396,10 @@ p("如果今天是第一次打开，并且没完成微课，左侧其他入口�
 h2("4.4 窗口、字号和滚动")
 p("默认窗口约 1400×940，并会自动限制在当前屏幕工作区内。页面标题 30pt、卡片标题 21pt、正文 15—18pt、注释 12—14pt；标题和正文不再一个大小。")
 p("翻页、下一题、提交反馈后会自动回到内容顶部；内容比窗口高时用右侧滚动条。若屏幕较小，窗口会缩小，文字会自动换行而不是互相盖住。")
+p("本版不再强制 Per-Monitor DPI；在 150%/200% 缩放下由 Windows 整体缩放窗口，避免“字体放大了、坐标没放大”造成的文字堆叠。")
+h2("4.5 大肥鱼出现在哪里")
+p("左侧栏固定显示大肥鱼的 Q 版头像和“今天也一起学吧”；下方是夜景全身立绘。答题正确/错误反馈、加载进度窗会换用不同表情。图片占用独立留白，不覆盖题干、选项和按钮。")
+p("配色使用 DeepSeek 经典蓝 #4D6BFE、深蓝 #1B2A6B、浅蓝白 #F0F5FF，辅以珊瑚色和星光金。形象只用你提供的 6 张图裁切，不是项目生成，也不是抓取网络素材；详见 docs/MASCOT.md 和 MASCOT_LICENSE.md。")
 page_break()
 
 # ---------------- 5 ----------------
@@ -411,7 +415,7 @@ h3("第一步：英译中")
 p("屏幕显示一个英文句子，目标词高亮。你只需要回答“这句话里这个单词是什么意思”，用中文写，不要求拼写。")
 bullet("提交后先本地对照核心释义；明显对上就直接给反馈，不花模型调用。")
 bullet("模糊/不确定时才调用 DeepSeek；没有 Key 或额度用完会降级本地提示。")
-bullet("反馈页显示：英文原句、中文提示/翻译、核心释义、老师反馈。")
+bullet("反馈页显示：英文原句、中文提示/翻译、核心释义、大肥鱼反馈。")
 h3("第二步：中译英（仅核心词）")
 p("系统显示中文释义，让你写出对应的英文单词或短语。")
 bullet("允许小拼写错误：长度 5 个字母以上容错 1 个字符，9 个字母以上容错 2 个字符。")
@@ -458,7 +462,7 @@ numbered("在理由框写一句中文：我选 B，因为原文 however 后面�
 numbered("点“提交答案和理由”。系统先本地判对错，再调用 DeepSeek 评估理由质量。")
 numbered("看完反馈点“下一题”。不点不会自动跳。")
 h2("6.4 反馈页")
-p("答对：显示正确答案、评估、老师的一句鼓励和技巧。答错：显示固定结构的讲解：")
+p("答对：显示正确答案、评估、大肥鱼的一句鼓励和技巧。答错：显示固定结构的讲解：")
 bullet("这道题考什么（一句话）。")
 bullet("正确答案为什么对（回原文/听力信号词）。")
 bullet("你选的选项为什么是陷阱。")
@@ -625,6 +629,14 @@ p("不要只复制 questions.json；单词进度、错题、打卡都在其他 J
 h2("11.5 成本控制")
 p("默认每天最多 60 次 DeepSeek 调用。刷题约 20 次评估 + 错题深度讲解；同一题同一选项命中缓存，第二次不再调用。单词约 10—20 次，周复盘 1 次。超过预算会自动降级本地判断，不卡住学习。")
 p("一道题学满两次后，默认勾选“跳过重复讲解”，不会再次调用深度模型；想重新生成时取消勾选即可。")
+h2("11.6 跨版本学习进度包")
+p("设置页最下面有“学习进度包”卡片。程序在每次答题、每轮结束、关闭时自动更新 data/progress/latest.cet4progress.json；点“导出学习进度”可另存一份带日期的 .cet4progress.json。")
+p("导入时按“题干 + 选项内容”的 SHA256 指纹匹配，不依赖题库行号。因此：")
+bullet("新题库换了 id、只调了选项顺序：按内容指纹仍能找到，进度继续。")
+bullet("新版本有、老版本没有的题：导入后保留为进度包题目，并进入老版本题库；对应讲解/原文快照一起带入。")
+bullet("单词按 word 合并，打卡按日期取并集；不会因为换题库把已学词、连续天数清零。")
+bullet("每次更新都只增加 schemaVersion，不删除旧字段；未来版本继续按字段存在性读取。")
+p("换电脑：原电脑导出 .cet4progress.json，新电脑在设置页导入即可。原电脑的 data 文件夹仍建议整体备份。")
 page_break()
 
 # ---------------- 12 ----------------
@@ -742,7 +754,7 @@ doc.add_paragraph()
 callout("最后一句",
         "你不需要一次变强。每天 30 分钟单词、能做就加 20 题；系统会帮你记录和复习。明天照常打开就行。",
         LIGHT_GREEN)
-p("CET4Coach v1.1 · 详细使用手册 · 2026-10", size=8.5, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
+p("CET4Coach 大肥鱼版 v1.2-fish · 详细使用手册 · 2026-10", size=8.5, color=MUTED, align=WD_ALIGN_PARAGRAPH.CENTER)
 
 doc.save(OUT)
 print(OUT)

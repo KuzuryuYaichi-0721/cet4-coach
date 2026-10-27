@@ -1,6 +1,6 @@
 {
-  "appName": "四级教练 CET4Coach",
-  "version": "1.1.0",
+  "appName": "四级教练 · 大肥鱼版",
+  "version": "1.2.0-fish.1",
   "llm": {
     "provider": "deepseek",
     "baseUrl": "https://api.deepseek.com",
@@ -21,6 +21,7 @@
     "logs": "data/logs",
     "sessions": "data/sessions",
     "history": "data/history",
+    "progress": "data/progress",
     "questions": "data/questions.json",
     "materials": "data/materials.json",
     "words": "data/words.json",

@@ -1,20 +1,25 @@
-# 四级教练 CET4Coach
+﻿# 四级教练 · 大肥鱼版（独立测试库）
+
+> 这是独立测试版，不覆盖原来的 `CET4Coach` / GitHub main。功能不变，只改 UI 形象、教学口吻，并加入跨版本学习进度包。校验无误后再合并。
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207-5391FE?logo=powershell)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/KuzuryuYaichi-0721/cet4-coach)](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)
 
-面向北京地区、英语基础较弱学习者的 **Windows 纯本地** 四级备考系统。题库、学习记录、音频整理都在本机；大模型只接入 DeepSeek，用于回答评估、错题讲解、周复盘和一次性趣味句预生成。
+面向英语基础较弱学习者的 **Windows 纯本地** 四级备考系统。题库、学习记录、音频整理都在本机；大模型只接入 DeepSeek，用于回答评估、错题讲解、周复盘和一次性趣味句预生成。
 
-**第一次用，先看 [从今天开始：90 天学习路线](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
+**形象说明：** [大肥鱼设定](docs/MASCOT.md) · [形象授权](MASCOT_LICENSE.md)。
 
-**详细使用手册：** [CET4Coach 详细使用手册 PDF](docs/CET4Coach-User-Manual.zh-CN.pdf)（21 页，覆盖桌面启动、单词/刷题、听力整理、打卡、导入、排错和 90 天路线）。
+**本版新增：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、更口语化的可爱少女陪练反馈、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
+
+**第一次用，先看 [从开始学习](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
+
+**详细使用手册：** [CET4Coach 详细使用手册 PDF](docs/CET4Coach-User-Manual.zh-CN.pdf)（23 页，含大肥鱼形象、跨版本进度包和本版 UI）。
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.1.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
-- 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
+- 本版是独立测试文件夹，先不要覆盖原版；桌面版路径见 `C:\Users\erwei\Desktop\CET4Coach-Fish`。
+- 原版仓库：<https://github.com/KuzuryuYaichi-0721/cet4-coach>
 
 > 重要数据诚实说明：`o-Sakurajimamai-o/cet-practice` 的仓库里没有题库 JSON，题库实际在 Release 包的 `seed/cet6.db`（含 CET4 行）。本系统从 **v1.1.0 Windows 发布包** 中读取该 SQLite，按真实字段导入。2020—2025 年 CET4 去重后只有 **1,668 道唯一客观题**，其中仔细阅读+听力篇章 **620 道**；这与“90 天 × 20 题 = 1,800 个题位、重点 1,080 个题位”不一致。系统不伪造题目，使用 7 天后可重出的间隔复习规则补足题位，并把缺口写进 [gap_report.json](data/gap_report.json) 与 [import_report.json](data/import_report.json)。
 

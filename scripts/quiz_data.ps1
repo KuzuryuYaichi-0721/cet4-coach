@@ -7,7 +7,23 @@ $script:TechniqueCache = $null
 
 function Get-QuestionBank {
     if ($null -eq $script:QuestionCache) {
-        $script:QuestionCache = @(Read-JsonFile (Get-ConfigValue 'paths.questions' 'data/questions.json') @() -Quiet)
+        $base = @(Read-JsonFile (Get-ConfigValue 'paths.questions' 'data/questions.json') @() -Quiet)
+        $overlay = @(Read-JsonFile (Get-CET4Path 'data/progress_overlay.json') @() -Quiet)
+        $ids = @{}
+        $merged = @()
+        foreach ($q in $base) {
+            $id = [string](Get-ObjectPropertyValue $q 'id' '')
+            if ($id) { $ids[$id] = $true }
+            $merged += $q
+        }
+        foreach ($q in $overlay) {
+            $id = [string](Get-ObjectPropertyValue $q 'id' '')
+            if ($id -and -not $ids.ContainsKey($id)) {
+                $ids[$id] = $true
+                $merged += $q
+            }
+        }
+        $script:QuestionCache = $merged
     }
     return $script:QuestionCache
 }
@@ -76,14 +92,26 @@ function Get-RecentQuizQuestionIds {
     $ids = @{}
     $cutoff = (Get-Date).AddDays(-$Days)
     $sessionsDir = Get-CET4Path (Get-ConfigValue 'paths.sessions' 'data/sessions')
-    if (-not (Test-Path -LiteralPath $sessionsDir)) { return $ids }
-    foreach ($f in @(Get-ChildItem -LiteralPath $sessionsDir -File -Filter 'quiz-*.json' -ErrorAction SilentlyContinue)) {
-        try {
-            if ($f.LastWriteTime -lt $cutoff) { continue }
-            $s = Read-JsonFile $f.FullName $null -Quiet
-            if ($null -eq $s) { continue }
-            foreach ($id in @(Get-ObjectPropertyValue $s 'questionIds' @())) { $ids[[string]$id] = $true }
-        } catch { }
+    if (Test-Path -LiteralPath $sessionsDir) {
+        foreach ($f in @(Get-ChildItem -LiteralPath $sessionsDir -File -Filter 'quiz-*.json' -ErrorAction SilentlyContinue)) {
+            try {
+                if ($f.LastWriteTime -lt $cutoff) { continue }
+                $s = Read-JsonFile $f.FullName $null -Quiet
+                if ($null -eq $s) { continue }
+                foreach ($id in @(Get-ObjectPropertyValue $s 'questionIds' @())) { $ids[[string]$id] = $true }
+            } catch { }
+        }
+    }
+    $seenPath = Get-CET4Path 'data/progress_seen.json'
+    if (Test-Path -LiteralPath $seenPath) {
+        foreach ($x in @(Read-JsonFile $seenPath @() -Quiet)) {
+            $at = [string](Get-ObjectPropertyValue $x 'at' '')
+            if ($at) {
+                try { if ([datetime]::Parse($at) -lt $cutoff) { continue } } catch { }
+            }
+            $id = [string](Get-ObjectPropertyValue $x 'id' '')
+            if ($id) { $ids[$id] = $true }
+        }
     }
     return $ids
 }
@@ -259,6 +287,7 @@ function Save-QuizSession {
     param($Session)
     if ($null -eq $Session) { return }
     Write-JsonFile (Get-QuizSessionPath ([string](Get-ObjectPropertyValue $Session 'date' (Get-TodayString)))) $Session
+    if (Get-Command Save-PortableProgress -ErrorAction SilentlyContinue) { try { Save-PortableProgress -Silent } catch { } }
 }
 
 function Get-QuizQuestionById {
@@ -269,6 +298,8 @@ function Get-QuizQuestionById {
 function Get-QuizMaterial {
     param($Question)
     if ($null -eq $Question) { return $null }
+    $snap = Get-ObjectPropertyValue $Question 'material_snapshot' $null
+    if ($null -ne $snap) { return $snap }
     $mid = [string](Get-ObjectPropertyValue $Question 'material_id' '')
     $idx = Get-MaterialIndex
     if ($idx.ContainsKey($mid)) { return $idx[$mid] }

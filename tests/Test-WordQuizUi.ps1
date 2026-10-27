@@ -12,6 +12,7 @@ $script:Config = Read-JsonFile (Join-Path $root 'config.json')
 . (Join-Path $root 'scripts\words.ps1')
 . (Join-Path $root 'scripts\import.ps1')
 . (Join-Path $root 'scripts\checkin.ps1')
+. (Join-Path $root 'scripts\progress.ps1')
 . (Join-Path $root 'scripts\course.ps1')
 . (Join-Path $root 'scripts\ui.ps1')
 

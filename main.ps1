@@ -8,7 +8,8 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 try { [System.Windows.Forms.Application]::EnableVisualStyles() } catch { }
 try { [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false) } catch { }
-try { [System.Windows.Forms.Application]::SetHighDpiMode([System.Windows.Forms.HighDpiMode]::PerMonitorV2) } catch { }
+# 强制 DPI 不感知，由 Windows 整体缩放窗口；避免 150%/200% 下字体放大但坐标不放大导致文字堆叠。
+try { [System.Windows.Forms.Application]::SetHighDpiMode([System.Windows.Forms.HighDpiMode]::DpiUnaware) } catch { }
 
 . (Join-Path $PSScriptRoot 'scripts\common.ps1')
 $script:Config = Read-JsonFile (Join-Path $PSScriptRoot 'config.json') $null
@@ -23,10 +24,13 @@ if ($null -eq $script:Config) {
 . (Join-Path $PSScriptRoot 'scripts\words.ps1')
 . (Join-Path $PSScriptRoot 'scripts\import.ps1')
 . (Join-Path $PSScriptRoot 'scripts\checkin.ps1')
+. (Join-Path $PSScriptRoot 'scripts\progress.ps1')
 . (Join-Path $PSScriptRoot 'scripts\course.ps1')
 . (Join-Path $PSScriptRoot 'scripts\ui.ps1')
 
 Initialize-AppData
+try { Resolve-ProgressOverlay | Out-Null } catch { }
+try { Save-PortableProgress -Silent } catch { }
 try { Clear-OldListeningTemp | Out-Null } catch { Write-CET4Log -Category 'startup' -Level 'WARN' -Message (Format-SafeError $_) }
 Write-CET4Log -Category 'startup' -Message ('启动 CET4Coach v' + [string](Get-ConfigValue 'version' '1.0.0'))
 

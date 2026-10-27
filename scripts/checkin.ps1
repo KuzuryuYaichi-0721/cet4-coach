@@ -170,9 +170,9 @@ function Invoke-WeeklyReport {
                 $t = [string](Get-ObjectPropertyValue $_ 'type' '')
                 $reason = [string](Get-ObjectPropertyValue $_ 'userReason' '')
                 $err = [string](Get-ObjectPropertyValue $_ 'errorType' '')
-                "- $t | 学生理由: $reason | 错误类型: $err"
+                "- $t | 你的理由: $reason | 错误类型: $err"
             }) -join "`n"
-            $system = '你是大学英语四级老师，给基础较弱的学生写本周错题画像。要求：3-5 句话，浅显直白，不堆术语；先总结错得最多的 2 个题型，再指出 1 个共同错误模式，最后给 1 个下周可执行的小动作。不要编造数据，不要输出 markdown。'
+            $system = '你是大肥鱼，DeepSeek 的鲸鱼娘：爱笑会 wink、偶尔发呆，但看错题时很认真。给基础较弱的对方写本周错题画像，口吻像可爱少女陪练，用“我/咱”，不要用上位者的自称，也不要把对方当成被训的人，不端着。要求：3-5 句话，浅显直白，不堆术语；先总结错得最多的 2 个题型，再指出 1 个共同错误模式，最后给 1 个下周可执行的小动作。不要编造数据，不要输出 markdown。'
             $user = "本周错题统计（按题型）：`n$($stats.ByType | ConvertTo-Json -Compress)`n`n错题样本：`n$summaries`n`n只写 3-5 句中文。"
             $r = Invoke-DeepSeekChat -System $system -User $user -Purpose 'weekly_report' -MaxTokens 350 -CacheParts @{ week = $weekKey; wrong = $stats.Wrong.Count } -LogTag ('week-' + $weekKey)
             if ($r.Content) { $report.text = $r.Content.Trim(); $report.source = 'deepseek' }
@@ -186,7 +186,7 @@ function Invoke-WeeklyReport {
 
 function Show-WeeklyReportCard {
     param($Parent, [int]$Y = 0)
-    $card = New-UiCard -Width 1060 -Height 250
+    $card = New-UiCard -Width $script:UiContentWidth -Height 250
     $card.Location = New-Object System.Drawing.Point(0, $Y)
     $Parent.Controls.Add($card)
     $title = New-UiLabel -Text '本周错题画像' -Size 20 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -221,7 +221,7 @@ function Show-CheckinPage {
     $script:ContentPanel.Controls.Add($head)
     $data = Get-CheckinData
     $streak = Get-CheckinStreak $data
-    $card = New-UiCard -Width 1060 -Height 82
+    $card = New-UiCard -Width $script:UiContentWidth -Height 82
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $streakLabel = New-UiLabel -Text ("连续学习 {0} 天" -f $streak) -Size 24 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -232,7 +232,7 @@ function Show-CheckinPage {
     $sub.Location = New-Object System.Drawing.Point(280, 22)
     $card.Controls.Add($sub)
 
-    $calCard = New-UiCard -Width 1060 -Height 500
+    $calCard = New-UiCard -Width $script:UiContentWidth -Height 500
     $calCard.Location = New-Object System.Drawing.Point(0, 195)
     $script:ContentPanel.Controls.Add($calCard)
     $script:CalendarMonth = (Get-Date).Date.AddDays(1 - (Get-Date).Day)
@@ -251,9 +251,11 @@ function Show-CheckinPage {
         $title.Location = New-Object System.Drawing.Point(330, 16)
         $calCard.Controls.Add($title)
         $weekNames = @('一', '二', '三', '四', '五', '六', '日')
+        $cellStep = [Math]::Min(128, [Math]::Floor(($script:UiContentWidth - 40) / 7))
+        $cellWidth = [Math]::Max(88, $cellStep - 16)
         for ($i = 0; $i -lt 7; $i++) {
             $l = New-UiLabel -Text $weekNames[$i] -Size 14 -Color $script:UiMutedColor
-            $l.Location = New-Object System.Drawing.Point((25 + $i * 128), 78)
+            $l.Location = New-Object System.Drawing.Point((25 + $i * $cellStep), 78)
             $calCard.Controls.Add($l)
         }
         $first = $month
@@ -264,8 +266,8 @@ function Show-CheckinPage {
             $pos = $offset + $d - 1
             $row = [Math]::Floor($pos / 7); $col = $pos % 7
             $cell = New-Object System.Windows.Forms.Panel
-            $cell.Size = New-Object System.Drawing.Size(112, 50)
-            $cell.Location = New-Object System.Drawing.Point((20 + $col * 128), (112 + $row * 56))
+            $cell.Size = New-Object System.Drawing.Size($cellWidth, 50)
+            $cell.Location = New-Object System.Drawing.Point((20 + $col * $cellStep), (112 + $row * 56))
             $cell.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
             $cell.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
             $check = Get-CheckinDay $data ($date.ToString('yyyy-MM-dd'))
