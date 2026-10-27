@@ -1,0 +1,78 @@
+{
+  "appName": "四级教练 CET4Coach",
+  "version": "1.0.0",
+  "llm": {
+    "provider": "deepseek",
+    "baseUrl": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "timeoutSec": 60,
+    "maxRetries": 2,
+    "dailyCallBudget": 60,
+    "temperature": 0.3,
+    "maxTokens": 1600,
+    "cacheEnabled": true
+  },
+  "paths": {
+    "data": "data",
+    "cache": "data/cache",
+    "logs": "data/logs",
+    "sessions": "data/sessions",
+    "questions": "data/questions.json",
+    "materials": "data/materials.json",
+    "words": "data/words.json",
+    "wordSentences": "data/word_sentences.json",
+    "wordProgress": "data/word_progress.json",
+    "wrongbook": "data/wrongbook.json",
+    "checkin": "data/checkin.json",
+    "state": "data/state.json",
+    "audioTimepoints": "data/audio_timepoints.json",
+    "audioIndex": "library/audio/index.json",
+    "sourceAudio": "library/source_audio",
+    "libraryAudio": "library/audio",
+    "temp": "temp",
+    "techniques": "data/techniques.json",
+    "profile": "data/profile.json"
+  },
+  "listening": {
+    "ffmpeg": "ffmpeg",
+    "ffprobe": "ffprobe",
+    "potPlayer": "auto",
+    "potPlayerCandidates": [
+      "C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe",
+      "C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini.exe",
+      "C:\\Program Files (x86)\\DAUM\\PotPlayer\\PotPlayerMini.exe",
+      "C:\\Program Files\\PotPlayer\\PotPlayerMini64.exe"
+    ],
+    "cleanupOlderThanHours": 24
+  },
+  "wordSession": {
+    "minutes": 30,
+    "newWordsPerDay": 26,
+    "corePerDay": 13,
+    "recognitionPerDay": 13,
+    "reviewLimit": 20,
+    "maxTotalWords": 48
+  },
+  "quiz": {
+    "questionCount": 20,
+    "minutes": 30,
+    "focusMin": 12,
+    "mainTypeMin": 6,
+    "recentDays": 7,
+    "readingReminderSec": 180,
+    "listeningReminderSec": 120
+  },
+  "plan": {
+    "startDate": "2026-10-27",
+    "days": 90
+  },
+  "ui": {
+    "fontPt": 16,
+    "titlePt": 26,
+    "width": 1180,
+    "height": 800
+  },
+  "cost": {
+    "dailyCallBudget": 60
+  }
+}

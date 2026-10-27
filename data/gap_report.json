@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-10-27",
+  "primary_source": "o-Sakurajimamai-o/cet-practice v1.1.0, actual release seed/cet6.db, CET4 rows only",
+  "years_processed": "2020-2025",
+  "target": {
+    "days": 90,
+    "questions_per_day": 20,
+    "question_slots": 1800,
+    "focus_slots": 1080
+  },
+  "actual": {
+    "source_papers": 43,
+    "unique_objective_questions": 1668,
+    "careful_reading": 370,
+    "listening_passage": 250,
+    "focus_total": 620,
+    "listening_news": 175,
+    "listening_long": 201,
+    "matching": 370,
+    "cloze": 302,
+    "duplicates_removed": 697
+  },
+  "conclusion": "2020-2025 年这 43 套里，按题干+选项去重后只有 1668 道唯一客观题；仔细阅读+听力篇章只有 620 道唯一题。1080 个重点题位无法靠 2020-2025 的唯一新题填满。",
+  "strategy": [
+    "不伪造题目，不把同一题干改个字母当新题。",
+    "选择题按 7 天窗口去重；题位不足时，允许 7 天前出现过的题重出，仍满足“7 天内同题不重复”。",
+    "每轮仍保证至少 12 题来自仔细阅读/听力篇章，至少 6 题同一主攻题型，2-3 种题型混合。",
+    "如果用户补充 2015-2019 或 2026 年 JSON/SQLite，可通过“题库导入”追加；补缺题会在报告中单独标注，不混入 2020-2025 的均匀抽样。"
+  ],
+  "why_no_automatic_catteacher_supplement": "catteacher0515/cet4-download 主要提供 PDF/音频，不是带答案字段的结构化 JSON；自动从 PDF 抽题会把题号、选项、答案对齐错误的风险带进学习数据。系统提供 JSON/SQLite 导入入口，缺口报告要求人工确认后再补。",
+  "suggested_sources": [
+    "https://github.com/o-Sakurajimamai-o/cet-practice",
+    "https://github.com/catteacher0515/cet4-download",
+    "catteacher 的 PDF/音频需先人工转成带 answer/options_json 的 JSON 或 SQLite"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+ "generated_at": "2026-10-27T12:05:52",
+ "source": "cet-practice v1.1.0 Windows release, genuine seed/cet6.db (CET4 rows only)",
+ "years": "2020-2025",
+ "papers": 37,
+ "source_papers": 43,
+ "total_questions": 1668,
+ "objective_questions": 1668,
+ "unique_hashes": 1668,
+ "by_type": {
+  "listening_news": 175,
+  "listening_long": 201,
+  "listening_passage": 250,
+  "cloze": 302,
+  "matching": 370,
+  "careful_reading": 370
+ },
+ "by_year": {
+  "2020": 273,
+  "2021": 269,
+  "2022": 273,
+  "2023": 322,
+  "2024": 266,
+  "2025": 265
+ },
+ "focus_questions": 620,
+ "target_90_day_questions": 1800,
+ "target_focus_1080": 1080,
+ "focus_sufficient": false,
+ "total_sufficient": false,
+ "supplement_needed": [
+  "note: source is below 90-day target; see gap report"
+ ],
+ "gap_report": [
+  {
+   "kind": "focus_questions",
+   "have_unique": 620,
+   "need_slots": 1080,
+   "message": "2020-2025 年 CET4 的仔细阅读+听力篇章唯一题量为 620；90 天每天 12 道重点题需要 1080 个题位。系统按 7 天后可重出规则滚动，不伪造新题。",
+   "supplement_sources": [
+    "catteacher0515/cet4-download（仅 PDF/音频，需要人工转 JSON 后才能导入）",
+    "o-Sakurajimamai-o/cet-practice 其他年份的 seed 数据（需明确标注为补缺题）"
+   ]
+  },
+  {
+   "kind": "total_questions",
+   "have_unique": 1668,
+   "need_slots": 1800,
+   "message": "唯一题量为 1668；90 天每天 20 题需要 1800 个题位。最后 7 天会按 7 天后可重出规则复用错题/旧题，仍保持 7 天内不重复。"
+  }
+ ],
+ "duplicates_removed": 697
+}

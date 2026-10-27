@@ -1,0 +1,74 @@
+[
+  {
+    "id": "reading-locate",
+    "type": "careful_reading",
+    "scenario": "仔细阅读四选一",
+    "action": "先读题干圈关键词，再回原文找同一意思的替换；不必逐字读懂全文。",
+    "basis": "历年真题统计规律",
+    "confidence": "高"
+  },
+  {
+    "id": "listening-signal",
+    "type": "listening_passage",
+    "scenario": "听力篇章、新闻、长对话",
+    "action": "利用播放前的时间预读选项、圈关键词；听到 but/however/because/so 等信号词时，重点听它后面的一两句。",
+    "basis": "公开备考教材常见方法",
+    "confidence": "高"
+  },
+  {
+    "id": "matching-scan",
+    "type": "matching",
+    "scenario": "长篇匹配",
+    "action": "只读段落首尾句和数字、专有名词等特殊词，先找好定位的题，不逐字读全文。",
+    "basis": "官方大纲要求",
+    "confidence": "中高"
+  },
+  {
+    "id": "cloze-pos",
+    "type": "cloze",
+    "scenario": "选词填空",
+    "action": "先给词库标词性，用词性排除缩小范围；时间不够就直接猜，不在一题上纠结。",
+    "basis": "历年真题统计规律",
+    "confidence": "中高"
+  },
+  {
+    "id": "matching-label",
+    "type": "matching",
+    "scenario": "信息匹配找不到段落",
+    "action": "先做含人名、数字、年份的题，再用同义替换比对段落首尾句。",
+    "basis": "经验性技巧",
+    "confidence": "中"
+  },
+  {
+    "id": "listening-preview",
+    "type": "listening_passage",
+    "scenario": "听力篇章播放前",
+    "action": "快速扫选项中的名词和动词，预判话题；不要试图翻译每个选项。",
+    "basis": "经验性技巧",
+    "confidence": "中"
+  },
+  {
+    "id": "reading-main-idea",
+    "type": "careful_reading",
+    "scenario": "主旨题、作者态度题",
+    "action": "先看首段和每段首句，再找 but/however 后的作者态度；不要被例子带跑。",
+    "basis": "公开备考教材常见方法",
+    "confidence": "中高"
+  },
+  {
+    "id": "writing-frame",
+    "type": "writing",
+    "scenario": "写作",
+    "action": "先列三段框架，再填简单句；先保证切题、结构清楚、少语法错误。",
+    "basis": "官方大纲要求",
+    "confidence": "高"
+  },
+  {
+    "id": "translation-main",
+    "type": "translation",
+    "scenario": "翻译",
+    "action": "先抓句子主干；不会的词用简单词替代，不空着。",
+    "basis": "官方大纲要求",
+    "confidence": "高"
+  }
+]

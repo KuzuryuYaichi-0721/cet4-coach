@@ -1,0 +1,21 @@
+# local runtime data
+data/logs/*
+data/cache/*
+data/plans/*
+data/sessions/*
+data/backup/*
+data/llm_usage.json
+data/audio_missing_report.json
+data/state.json
+data/word_progress.json
+data/checkin.json
+data/wrongbook.json
+library/audio/*
+!library/audio/index.json
+library/source_audio/*
+!library/source_audio/README.txt
+temp/*
+!temp/.gitkeep
+tests/*.png
+tests/*-out.txt
+tests/*-err.txt

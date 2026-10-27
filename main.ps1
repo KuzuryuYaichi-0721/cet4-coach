@@ -1,0 +1,62 @@
+﻿#requires -Version 5.1
+# main.ps1 - CET4Coach local desktop entry point.
+
+$ErrorActionPreference = 'Stop'
+$script:CET4Root = $PSScriptRoot
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+try { [System.Windows.Forms.Application]::EnableVisualStyles() } catch { }
+try { [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false) } catch { }
+try { [System.Windows.Forms.Application]::SetHighDpiMode([System.Windows.Forms.HighDpiMode]::PerMonitorV2) } catch { }
+
+. (Join-Path $PSScriptRoot 'scripts\common.ps1')
+$script:Config = Read-JsonFile (Join-Path $PSScriptRoot 'config.json') $null
+if ($null -eq $script:Config) {
+    [System.Windows.Forms.MessageBox]::Show("config.json 读取失败或不存在。请把整个 CET4Coach 文件夹完整复制后再运行。", '四级教练', 'OK', 'Error') | Out-Null
+    exit 1
+}
+. (Join-Path $PSScriptRoot 'scripts\llm.ps1')
+. (Join-Path $PSScriptRoot 'scripts\listening.ps1')
+. (Join-Path $PSScriptRoot 'scripts\quiz_data.ps1')
+. (Join-Path $PSScriptRoot 'scripts\quiz.ps1')
+. (Join-Path $PSScriptRoot 'scripts\words.ps1')
+. (Join-Path $PSScriptRoot 'scripts\import.ps1')
+. (Join-Path $PSScriptRoot 'scripts\checkin.ps1')
+. (Join-Path $PSScriptRoot 'scripts\course.ps1')
+. (Join-Path $PSScriptRoot 'scripts\ui.ps1')
+
+Initialize-AppData
+try { Clear-OldListeningTemp | Out-Null } catch { Write-CET4Log -Category 'startup' -Level 'WARN' -Message (Format-SafeError $_) }
+Write-CET4Log -Category 'startup' -Message ('启动 CET4Coach v' + [string](Get-ConfigValue 'version' '1.0.0'))
+
+$script:MainForm = New-MainWindow
+$script:MainForm.Add_Shown({
+    try {
+        $state = Get-AppState
+        if (-not [bool](Get-ObjectPropertyValue $state 'onboardingComplete' $false)) {
+            Show-CoursePage
+        } else {
+            Show-HomePage
+        }
+        if (-not (Test-DeepSeekKeyPresent)) {
+            $keyMsg = "没有检测到 DEEPSEEK_API_KEY。`n`n程序不会调用大模型，单词和刷题仍可用本地判断继续。`n`n设置方法：在 PowerShell 里运行`nsetx DEEPSEEK_API_KEY `"你的Key`"`n然后关掉本程序重新打开。`n`nAPI Key 只会从环境变量读取，不会写进 config、日志或提示词。"
+            Show-AppMessage ($keyMsg -replace "`n", [Environment]::NewLine) '还没有设置 API Key' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        }
+    } catch {
+        Show-AppMessage ('启动页面失败：' + (Format-SafeError $_)) '启动' ([System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+})
+
+try {
+    [System.Windows.Forms.Application]::Run($script:MainForm)
+} catch {
+    try {
+        [System.Windows.Forms.MessageBox]::Show(('程序遇到错误：' + (Format-SafeError $_) + "`n`n已写入 data/logs。"), '四级教练', 'OK', 'Error') | Out-Null
+        Write-CET4Log -Category 'fatal' -Level 'ERROR' -Message (Format-SafeError $_)
+    } catch { }
+} finally {
+    try { Stop-OwnPotPlayer } catch { }
+    try { if ($script:OnLeavePage) { & $script:OnLeavePage } } catch { }
+    try { Close-UiProgress } catch { }
+}

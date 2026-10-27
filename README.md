@@ -1,6 +1,5 @@
 # 四级教练 CET4Coach
 
-[![CI](https://github.com/KuzuryuYaichi-0721/cet4-coach/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzuryuYaichi-0721/cet4-coach/actions/workflows/ci.yml)
 [![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207-5391FE?logo=powershell)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
