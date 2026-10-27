@@ -475,6 +475,129 @@ window.onload = () => {
     return (Start-Process -FilePath $htmlPath -PassThru)
 }
 
+function Split-ListeningText {
+    param([string]$Text, [int]$MaxChars = 180)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
+    $clean = ($Text -replace '\s+', ' ').Trim()
+    $sentences = [regex]::Split($clean, '(?<=[.!?])\s+')
+    $parts = New-Object System.Collections.Generic.List[string]
+    $cur = ''
+    foreach ($sentence in $sentences) {
+        $s = $sentence.Trim()
+        if (-not $s) { continue }
+        if ($cur -and (($cur + ' ' + $s).Length -le $MaxChars)) { $cur = $cur + ' ' + $s; continue }
+        if ($cur) { $parts.Add($cur.Trim()); $cur = '' }
+        if ($s.Length -le $MaxChars) { $cur = $s; continue }
+        $words = $s -split '\s+'
+        foreach ($w in $words) {
+            $next = if ($cur) { $cur + ' ' + $w } else { $w }
+            if ($next.Length -gt $MaxChars) {
+                if ($cur) { $parts.Add($cur.Trim()) }
+                $cur = $w
+            } else { $cur = $next }
+        }
+    }
+    if ($cur) { $parts.Add($cur.Trim()) }
+    return @($parts)
+}
+function Test-DownloadedAudioFile {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    $len = (Get-Item -LiteralPath $Path).Length
+    if ($len -lt 900) { return $false }
+    try {
+        $fs = [IO.File]::OpenRead($Path)
+        $b = New-Object byte[] 4
+        [void]$fs.Read($b, 0, 4); $fs.Dispose()
+        if ($b[0] -eq 0x49 -and $b[1] -eq 0x44 -and $b[2] -eq 0x33) { return $true } # ID3
+        if ($b[0] -eq 0x52 -and $b[1] -eq 0x49 -and $b[2] -eq 0x46 -and $b[3] -eq 0x46) { return $true } # RIFF
+        if ($b[0] -eq 0xFF -and ($b[1] -band 0xE0) -eq 0xE0) { return $true } # MPEG frame
+    } catch { }
+    return $false
+}
+
+function New-ListeningDownloadedAudio {
+    param($Question)
+    $text = Get-QuestionTranscript $Question
+    if ([string]::IsNullOrWhiteSpace($text)) { throw '这道题没有听力原文，无法下载语音。' }
+    $segments = @(Split-ListeningText $text 180)
+    if ($segments.Count -eq 0) { throw '听力原文为空。' }
+    $dir = Join-Path (Get-ListeningTempDir) 'downloaded'
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $hash = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($text)))).Replace('-','').ToLowerInvariant().Substring(0,16)
+    $sha.Dispose()
+    $out = Join-Path $dir ('tts-' + $hash + '.mp3')
+    if ((Test-Path -LiteralPath $out) -and (Test-DownloadedAudioFile $out)) { return $out }
+
+    $providers = @(
+        @{ Name = 'youdao'; Url = 'https://dict.youdao.com/dictvoice?audio={0}&type=2' },
+        @{ Name = 'baidu'; Url = 'https://fanyi.baidu.com/gettts?lan=en&text={0}&spd=3&source=web' },
+        @{ Name = 'google'; Url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={0}' },
+        @{ Name = 'streamelements'; Url = 'https://api.streamelements.com/kappa/v2/speech?voice=Brian&text={0}' }
+    )
+    $parts = @()
+    $deadline = (Get-Date).AddSeconds(60)
+    $i = 0
+    foreach ($seg in $segments) {
+        if ((Get-Date) -gt $deadline) { throw '下载超时（60 秒）。请检查网络，或先把听力音频放进 library/audio。' }
+        $i++
+        $part = Join-Path $dir ('tts-' + $hash + ('-{0}.mp3' -f $i))
+        $got = $false
+        foreach ($p in $providers) {
+            if ($got) { break }
+            try {
+                $enc = [uri]::EscapeDataString($seg)
+                $url = [string]$p.Url -f $enc
+                if (Test-Path -LiteralPath $part) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
+                Invoke-WebRequest -Uri $url -OutFile $part -TimeoutSec 15 -UseBasicParsing -Headers @{
+                    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                    'Referer' = 'https://www.youdao.com/'
+                } | Out-Null
+                if (Test-DownloadedAudioFile $part) { $got = $true; $parts += $part }
+            } catch { }
+        }
+        if (-not $got) {
+            throw ('第 {0} 段语音下载失败。请检查网络，或先把听力音频放进 library/audio 再整理。' -f $i)
+        }
+    }
+    if ($parts.Count -eq 1) {
+        Move-Item -LiteralPath $parts[0] -Destination $out -Force
+    } else {
+        $ff = Get-FFmpegInfo
+        if ($ff.Available) {
+            $list = Join-Path $dir ('list-' + $hash + '.txt')
+            $lines = @()
+            foreach ($part in $parts) {
+                $escaped = $part.Replace("'", "'\''")
+                $lines += ("file '{0}'" -f $escaped)
+            }
+            [IO.File]::WriteAllLines($list, $lines, (New-Object Text.UTF8Encoding($false)))
+            & $ff.Ffmpeg '-hide_banner' '-loglevel' 'error' '-y' '-f' 'concat' '-safe' '0' '-i' $list '-c' 'copy' $out 2>$null
+            if (-not (Test-DownloadedAudioFile $out)) { throw '语音合并失败。' }
+            Remove-Item -LiteralPath $list -Force -ErrorAction SilentlyContinue
+        } else {
+            $bytes = New-Object System.Collections.Generic.List[byte]
+            foreach ($part in $parts) { $bytes.AddRange([IO.File]::ReadAllBytes($part)) }
+            [IO.File]::WriteAllBytes($out, $bytes.ToArray())
+        }
+        foreach ($part in $parts) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
+    }
+    if (-not (Test-DownloadedAudioFile $out)) { throw '语音文件下载后校验失败。' }
+    return $out
+}
+
+function Register-ListeningFileCleanup {
+    param([string]$Path, [int]$ProcessId)
+    if (-not $Path) { return }
+    $cleanupScript = "Wait-Process -Id $ProcessId -ErrorAction SilentlyContinue; Remove-Item -LiteralPath '$Path' -Force -ErrorAction SilentlyContinue"
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cleanupScript))
+    try {
+        Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-WindowStyle','Hidden','-EncodedCommand',$encoded) -WindowStyle Hidden | Out-Null
+    } catch { }
+}
+
+
 function Find-ListeningAudio {
     param([string]$Suite, [string]$Section)
     $want = ('{0}-Section{1}' -f $Suite, $Section).ToLowerInvariant()

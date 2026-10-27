@@ -1,6 +1,6 @@
 {
   "appName": "四级教练 · 大肥鱼版",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "llm": {
     "provider": "deepseek",
     "baseUrl": "https://api.deepseek.com",
@@ -11,7 +11,7 @@
     "temperature": 0.3,
     "maxTokens": 1600,
     "explanationModel": "deepseek-chat",
-    "explanationMaxTokens": 2400,
+    "explanationMaxTokens": 3200,
     "explanationTemperature": 0.2,
     "cacheEnabled": true
   },

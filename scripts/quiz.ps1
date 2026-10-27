@@ -85,6 +85,52 @@ $previousText
     }
 }
 
+function Get-LocalOptionGloss {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return '' }
+    if (-not (Get-Command Get-WordBank -ErrorAction SilentlyContinue)) { return '' }
+    if ($null -eq $script:LocalGlossMap) {
+        $script:LocalGlossMap = @{}
+        foreach ($w in @(Get-WordBank)) {
+            $k = ([string]$w.word).ToLowerInvariant()
+            if ($k) { $script:LocalGlossMap[$k] = [string]$w.short_meaning }
+        }
+    }
+    $stop = @{
+        'the'='这/该'; 'a'='一个'; 'an'='一个'; 'is'='是'; 'are'='是'; 'was'='曾是'; 'were'='曾是';
+        'it'='它'; 'its'='它的'; 'this'='这个'; 'that'='那个'; 'these'='这些'; 'those'='那些';
+        'to'='去/向'; 'of'='的'; 'in'='在…里'; 'on'='在…上'; 'for'='为了'; 'with'='和'; 'by'='通过';
+        'and'='和'; 'or'='或'; 'but'='但是'; 'not'='不'; 'no'='没有'; 'as'='作为'; 'at'='在';
+        'be'='是'; 'been'='是'; 'being'='正在'; 'have'='有'; 'has'='有'; 'had'='有'; 'do'='做';
+        'does'='做'; 'did'='做'; 'can'='能'; 'could'='能'; 'may'='可能'; 'might'='可能'; 'will'='将';
+        'would'='会'; 'should'='应该'; 'from'='从'; 'than'='比'; 'more'='更'; 'most'='最';
+        'what'='什么'; 'which'='哪个'; 'who'='谁'; 'when'='何时'; 'where'='哪里'; 'why'='为什么'; 'how'='如何'
+    }
+    $tokens = [regex]::Matches($Text, "[A-Za-z][A-Za-z'-]{1,}")
+    $out = @()
+    foreach ($m in $tokens) {
+        if ($out.Count -ge 14) { break }
+        $word = $m.Value.Trim("'-").ToLowerInvariant()
+        if ($stop.ContainsKey($word)) { $out += ($word + '（' + $stop[$word] + '）'); continue }
+        $meaning = $script:LocalGlossMap[$word]
+        if (-not $meaning -and $word.Length -gt 4) {
+            foreach ($suffix in @('ing','ed','es','s')) {
+                if ($word.EndsWith($suffix)) {
+                    $stem = $word.Substring(0, $word.Length - $suffix.Length)
+                    $meaning = $script:LocalGlossMap[$stem]
+                    if ($meaning) { break }
+                }
+            }
+        }
+        if ($meaning) {
+            $first = ($meaning -split '[；;]')[0].Trim()
+            $out += ($word + '（' + $first + '）')
+        }
+    }
+    if ($out.Count -eq 0) { return '' }
+    return '本地直译：' + ($out -join '；')
+}
+
 function Get-LocalTeacherFeedback {
     param(
         $Question,
@@ -120,8 +166,9 @@ function Get-LocalTeacherFeedback {
         } else {
             $note = '不是本题答案。先判断它是否答非所问，再判断是否把原文的某个词偷换成了另一个意思。'
         }
-        $optionAnalysis += [pscustomobject]@{ key = $key; text = $text; verdict = $verdict; analysis = $note }
+        $optionAnalysis += [pscustomobject]@{ key = $key; text = $text; text_en = $text; text_zh = (Get-LocalOptionGloss $text); verdict = $verdict; analysis = $note }
     }
+    $correctText = Get-OptionTextByKey $DisplayOptions $CorrectKey
     $userMis = if ($Wrong) {
         "从你的选择和理由看，可能卡在：把「出现了原文词」当成「回答了题干」。这次先回定位句，确认主语和转折词，再看选项。"
     } else { '' }
@@ -131,6 +178,8 @@ function Get-LocalTeacherFeedback {
     }
     return [pscustomobject]@{
         exam_point = $exam
+        answer_choice = [pscustomobject]@{ key = $CorrectKey; text = $correctText; text_zh = (Get-LocalOptionGloss $correctText) }
+        why_choose = if ($analysis) { $analysis } else { '正确答案对应原文/录音中的定位句；先找同义替换，再逐项排除。' }
         why_correct = if ($analysis) { $analysis } else { '正确答案对应原文/录音中的定位句；先找同义替换，再逐项排除。' }
         misconception = $userMis
         option_analysis = @($optionAnalysis)
@@ -148,7 +197,7 @@ function Get-StoredTeacherFeedback {
     param($Entry, $Question, [string]$Selected)
     if ($null -eq $Entry) { return $null }
     $stored = Get-ObjectPropertyValue $Entry 'deepFeedback' $null
-    if ($null -ne $stored) {
+    if ($null -ne $stored -and $null -ne (Get-ObjectPropertyValue $stored 'answer_choice' $null)) {
         $stored | Add-Member -NotePropertyName source -NotePropertyValue 'stored-deep' -Force
         return $stored
     }
@@ -212,17 +261,19 @@ $passage
 题库参考解析：
 $analysis
 请深度思考后输出：
+- answer_choice：先明确告诉对方这道题选什么。字段 key（正确选项字母）、text（正确选项完整英文）、text_zh（正确选项的准确中文翻译）。
+- why_choose：为什么选它。先用一句话给结论，再引用原文/录音定位句和同义替换，讲清“为什么不是别的”。
 - exam_point：这道题具体考什么，一句话，必须落到本题。
 - why_correct：正确答案为什么对，引用定位句/信号词，解释同义替换。
 - misconception：从对方的选择和理由出发，推断他为什么会被这个选项吸引；不确定就用“从你的选择看，可能……”，不要武断。
-- option_analysis：对 A/B/C/D 每一个选项逐项分析。每项字段 key、verdict（正确/干扰项/无关项/相反项）、analysis（为什么选/不选，和原文哪里对应或偷换）。
+- option_analysis：对 A/B/C/D 每一个选项逐项分析。每项字段 key、text_en（完整英文选项，不能省略）、text_zh（与 text_en 对应的准确中文翻译，不能只写中文）、verdict（正确/干扰项/无关项/相反项）、analysis（为什么选/不选，和原文哪里对应或偷换）。
 - evidence：原文/录音依据，必须引用给出的材料；没有材料就写“本题材料不足，按参考解析”。
 - next_action：下次做同类题的一个具体动作。
 - technique：一条技巧，直接写动作，并注明依据类型（官方大纲/历年真题统计/公开教材/经验性技巧），不得编造具体数据。
 - follow_up：2 个检测自己是否真懂的小问题。
-语言要具体、深入、耐心，避免空泛。
+语言要具体、深入、耐心，避免空泛。选择题必须给出“选什么”和“为什么”；每个选项必须中英对译，英文完整保留，中文紧跟在后面。
 "@
-            $cacheKey = 'quiz-deep:{0}:{1}:{2}:v3' -f $Question.id, $Selected, $CorrectKey
+            $cacheKey = 'quiz-deep:{0}:{1}:{2}:v4' -f $Question.id, $Selected, $CorrectKey
             $deepModel = [string](Get-ConfigValue 'llm.explanationModel' 'deepseek-chat')
             $r = Invoke-DeepSeekChat -System $system -User $user -Purpose 'quiz_explanation_deep' -RequireJson -CacheKey $cacheKey -MaxTokens ([int](Get-ConfigValue 'llm.explanationMaxTokens' 2400)) -Temperature ([double](Get-ConfigValue 'llm.explanationTemperature' 0.2)) -Model $deepModel -LogTag ('deep-' + $Question.id)
             $j = $r.Json
@@ -231,6 +282,8 @@ $analysis
                 foreach ($oa in @(Get-ObjectPropertyValue $j 'option_analysis' @())) {
                     $parsedOptions += [pscustomobject]@{
                         key = [string](Get-ObjectPropertyValue $oa 'key' '')
+                        text_en = [string](Get-ObjectPropertyValue $oa 'text_en' (Get-ObjectPropertyValue $oa 'text' ''))
+                        text_zh = [string](Get-ObjectPropertyValue $oa 'text_zh' '')
                         verdict = [string](Get-ObjectPropertyValue $oa 'verdict' '')
                         analysis = [string](Get-ObjectPropertyValue $oa 'analysis' '')
                     }
@@ -244,12 +297,28 @@ $analysis
                     foreach ($k in $missing) {
                         $fallback = $localMap[$k]
                         $fallbackText = if ($fallback) { [string]$fallback.analysis } else { '模型没有逐项覆盖这一项；先按原文定位句自己对照。' }
-                        $parsedOptions += [pscustomobject]@{ key = $k; verdict = '本地补充'; analysis = $fallbackText }
+                        $parsedOptions += [pscustomobject]@{ key = $k; text_en = if ($fallback) { [string]$fallback.text_en } else { '' }; text_zh = if ($fallback) { [string]$fallback.text_zh } else { '' }; verdict = '本地补充'; analysis = $fallbackText }
                     }
                 }
+                foreach ($po in $parsedOptions) {
+                    if (-not $po.text_en) { $po.text_en = Get-OptionTextByKey $DisplayOptions $po.key }
+                    if (-not $po.text_zh) { $po.text_zh = Get-LocalOptionGloss $po.text_en }
+                }
                 $parsedOptions = @($parsedOptions | Sort-Object key)
+                $answerChoice = Get-ObjectPropertyValue $j 'answer_choice' $null
+                if ($null -eq $answerChoice) {
+                    $answerChoice = [pscustomobject]@{ key = $CorrectKey; text = $correctText; text_zh = '' }
+                }
+                if (-not [string](Get-ObjectPropertyValue $answerChoice 'text' '')) {
+                    Set-ObjectPropertyValue $answerChoice 'text' $correctText
+                }
+                if (-not [string](Get-ObjectPropertyValue $answerChoice 'text_zh' '')) {
+                    Set-ObjectPropertyValue $answerChoice 'text_zh' (Get-LocalOptionGloss ([string](Get-ObjectPropertyValue $answerChoice 'text' '')))
+                }
                 return [pscustomobject]@{
                     exam_point = [string](Get-ObjectPropertyValue $j 'exam_point' '这题考定位和同义替换。')
+                    answer_choice = $answerChoice
+                    why_choose = [string](Get-ObjectPropertyValue $j 'why_choose' (Get-ObjectPropertyValue $j 'why_correct' ''))
                     why_correct = [string](Get-ObjectPropertyValue $j 'why_correct' '')
                     misconception = [string](Get-ObjectPropertyValue $j 'misconception' '')
                     option_analysis = @($parsedOptions)
@@ -275,8 +344,18 @@ function Get-FeedbackText {
     param($Feedback)
     if ($null -eq $Feedback) { return '' }
     $lines = @()
+    $ac = Get-ObjectPropertyValue $Feedback 'answer_choice' $null
+    if ($null -ne $ac) {
+        $ak = [string](Get-ObjectPropertyValue $ac 'key' '')
+        $at = [string](Get-ObjectPropertyValue $ac 'text' '')
+        $az = [string](Get-ObjectPropertyValue $ac 'text_zh' '')
+        if ($ak) { $lines += ('这道题选：{0}) {1}' -f $ak, $at) }
+        if ($az) { $lines += ('中文：' + $az) }
+    }
+    $why = Get-ObjectPropertyValue $Feedback 'why_choose' ''
+    if (-not $why) { $why = Get-ObjectPropertyValue $Feedback 'why_correct' '' }
+    if ($why) { $lines += ('为什么选它：' + [string]$why) }
     if (Get-ObjectPropertyValue $Feedback 'exam_point' '') { $lines += ('这道题考什么：' + [string](Get-ObjectPropertyValue $Feedback 'exam_point' '')) }
-    if (Get-ObjectPropertyValue $Feedback 'why_correct' '') { $lines += ('正确答案为什么对：' + [string](Get-ObjectPropertyValue $Feedback 'why_correct' '')) }
     if (Get-ObjectPropertyValue $Feedback 'misconception' '') { $lines += ('你的误区：' + [string](Get-ObjectPropertyValue $Feedback 'misconception' '')) }
     $oa = @(Get-ObjectPropertyValue $Feedback 'option_analysis' @())
     if ($oa.Count -gt 0) {
@@ -285,7 +364,11 @@ function Get-FeedbackText {
             $k = [string](Get-ObjectPropertyValue $o 'key' '')
             $v = [string](Get-ObjectPropertyValue $o 'verdict' '')
             $a = [string](Get-ObjectPropertyValue $o 'analysis' '')
-            $lines += ("  {0}) 【{1}】{2}" -f $k, $v, $a)
+            $en = [string](Get-ObjectPropertyValue $o 'text_en' (Get-ObjectPropertyValue $o 'text' ''))
+            $zh = [string](Get-ObjectPropertyValue $o 'text_zh' '')
+            if ($en) { $lines += ("  {0}) 【{1}】{2}" -f $k, $v, $en) } else { $lines += ("  {0}) 【{1}】" -f $k, $v) }
+            if ($zh) { $lines += ('     中文：' + $zh) }
+            if ($a) { $lines += ('     为什么：' + $a) }
         }
     }
     if (Get-ObjectPropertyValue $Feedback 'evidence' '') { $lines += ('原文依据：' + [string](Get-ObjectPropertyValue $Feedback 'evidence' '')) }
@@ -564,7 +647,7 @@ function Show-QuizQuestion {
         }
     }
     if ($q.type -like 'listening*') {
-        $info = New-UiLabel -Text '先播放听力，听完再显示选项。有原音频用原音频；没有时用浏览器英语语音朗读（电脑合成音），会打开一个独立播放窗。播放次数会记录。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
+        $info = New-UiLabel -Text '先播放听力，听完再显示选项。有原音频用原音频；没有时先从在线语音下载 MP3 到临时目录，再用 PotPlayer 本地播放，播放结束自动删除。播放次数会记录。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
         $info.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($info)
         $y += [Math]::Max(30, $info.PreferredHeight + 8)
@@ -574,20 +657,28 @@ function Show-QuizQuestion {
             $q = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s 'index' 0)]
             $path = Get-QuizAudioPath $q
             $src = '原音频'
+            $text = ''
             if (-not $path) {
                 $text = Get-QuestionTranscript $q
-                if (-not $text -or -not (Test-ListeningSpeechAvailable)) {
-                    Show-AppMessage '这道题没有原音频，浏览器语音也不可用。可以先点“我不会，逐词讲解”看听力文本。' '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                if (-not $text) {
+                    Show-AppMessage '这道题没有听力原文，无法下载语音。' '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
                     return
                 }
-                $src = '浏览器语音'
+                Show-UiProgress -Title '正在下载听力音频' -Text '先下载到临时目录，再用 PotPlayer 本地播放；播放结束自动删除。'
+                try {
+                    $path = New-ListeningDownloadedAudio $q
+                    $src = '本地下载语音'
+                } catch {
+                    Close-UiProgress
+                    Show-AppMessage ('听力音频下载失败：' + (Format-SafeError $_)) '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                    return
+                } finally {
+                    Close-UiProgress
+                }
             }
             try {
-                if ($path) {
-                    Start-ListeningPlayback -Path $path | Out-Null
-                } else {
-                    Start-BrowserListening -Text $text -QuestionId ([string]$q.id) | Out-Null
-                }
+                $proc = Start-ListeningPlayback -Path $path
+                if ($src -eq '本地下载语音') { Register-ListeningFileCleanup -Path $path -ProcessId ([int]$proc.Id) }
                 $cur.replayCount = [int](Get-ObjectPropertyValue $cur 'replayCount' 0) + 1
                 Set-ObjectPropertyValue $cur 'replayCount' $cur.replayCount
                 Set-ObjectPropertyValue $s 'current' $cur
@@ -595,6 +686,7 @@ function Show-QuizQuestion {
                 $script:QuizUi.PlayCountLabel.Text = ('已播放 {0} 次' -f $cur.replayCount)
                 Set-StatusBar ('已播放（{1}）；本次是第 {0} 次回放。' -f $cur.replayCount, $src)
             } catch {
+                if ($src -eq '本地下载语音') { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
                 Show-AppMessage ('播放失败：' + (Format-SafeError $_)) '播放' ([System.Windows.Forms.MessageBoxIcon]::Warning)
             }
         }
