@@ -46,15 +46,15 @@ function Invoke-QuizEvaluation {
     if ($PreviousEntry) {
         $previousText = "上次选择：$([string](Get-ObjectPropertyValue $PreviousEntry 'userAnswer' ''))；上次错误类型：$([string](Get-ObjectPropertyValue $PreviousEntry 'errorType' ''))"
     }
-    $system = '你是大学英语四级老师，评价学生的选择题作答和一句话理由。只输出 JSON，不要 markdown。JSON 字段：reason_quality（好/一般/较差）、error_type（定位错/同义替换没认出/蒙对/没找到位置/没听到信号词/时间不够/无）、encouragement（不超过 20 字的中文鼓励）、misconception_hint（从学生的选择和理由看，可能卡在哪一步，一句话；不确定就写“需要看讲解”）。判断要具体，不要空泛。'
+    $system = '你是大肥鱼，DeepSeek 的鲸鱼娘：深蓝长发、女仆头饰，像第二张图那样爱笑会 wink，也像第四张图那样偶尔发呆。你说话像可爱少女，用“我/咱”，短句、软一点，但讲题要具体。不要用上位者的自称，也不要把对方当成被训的人。现在评价对方的选择题作答和一句话理由。只输出 JSON，不要 markdown。JSON 字段：reason_quality（好/一般/较差）、error_type（定位错/同义替换没认出/蒙对/没找到位置/没听到信号词/时间不够/无）、encouragement（不超过 20 字的中文鼓励）、misconception_hint（从对方的选择和理由看，可能卡在哪一步，一句话；不确定就写“需要看讲解”）。判断要具体，不要空泛。'
     $user = @"
 题型：$(Get-TypeDisplayName $Question.type)
 题干：$($Question.stem)
 选项：
 $opts
 正确答案：$CorrectKey) $correctText
-学生选择：$Selected) $selectedText
-学生理由：$Reason
+你选的：$Selected) $selectedText
+你的理由：$Reason
 回放次数：$ReplayCount
 $previousText
 "@
@@ -196,15 +196,15 @@ function Get-QuizTeacherFeedback {
             if ($PreviousEntry) {
                 $previousText = "上次选择：$([string](Get-ObjectPropertyValue $PreviousEntry 'userAnswer' ''))；上次理由：$([string](Get-ObjectPropertyValue $PreviousEntry 'userReason' ''))；上次错误类型：$([string](Get-ObjectPropertyValue $PreviousEntry 'errorType' ''))"
             }
-            $system = '你是耐心、专业但语言浅显的大学英语四级老师。你的任务不是简单对答案，而是做一次针对这道题的深度诊断：先判断题型和命题点，再还原学生为什么会选这个错误选项，最后逐项分析所有选项。只输出 JSON，不要 markdown。禁止编造原文、数据、论文；每条依据必须能在给出的材料或参考解析中找到。不要用“语义场”“图式理论”等术语。'
+            $system = '你是大肥鱼，DeepSeek 的鲸鱼娘：深蓝长发、女仆头饰，爱笑、会 wink、偶尔发呆，但讲题认真。你说话像可爱少女，用“我/咱”，先贴贴再指出一个具体问题；不要用上位者的自称，也不要把对方当成被训的人。你的任务不是简单对答案，而是做一次针对这道题的深度诊断：先判断题型和命题点，再还原对方为什么会选这个错误选项，最后逐项分析所有选项。只输出 JSON，不要 markdown。禁止编造原文、数据、论文；每条依据必须能在给出的材料或参考解析中找到。不要用“语义场”“图式理论”等术语。'
             $user = @"
 题型：$(Get-TypeDisplayName $Question.type)
 题干：$($Question.stem)
 选项：
 $opts
 正确答案：$CorrectKey) $correctText
-学生选择：$Selected) $selectedText
-学生理由：$UserReason
+你选的：$Selected) $selectedText
+你的理由：$UserReason
 回放次数：$ReplayCount
 $previousText
 原文/材料：
@@ -214,7 +214,7 @@ $analysis
 请深度思考后输出：
 - exam_point：这道题具体考什么，一句话，必须落到本题。
 - why_correct：正确答案为什么对，引用定位句/信号词，解释同义替换。
-- misconception：从学生的选择和理由出发，推断他为什么会被这个选项吸引；不确定就用“从你的选择看，可能……”，不要武断。
+- misconception：从对方的选择和理由出发，推断他为什么会被这个选项吸引；不确定就用“从你的选择看，可能……”，不要武断。
 - option_analysis：对 A/B/C/D 每一个选项逐项分析。每项字段 key、verdict（正确/干扰项/无关项/相反项）、analysis（为什么选/不选，和原文哪里对应或偷换）。
 - evidence：原文/录音依据，必须引用给出的材料；没有材料就写“本题材料不足，按参考解析”。
 - next_action：下次做同类题的一个具体动作。
@@ -327,6 +327,7 @@ function Add-ResultToSession {
         technique = [string](Get-ObjectPropertyValue $Feedback 'technique' '')
         optionAnalysis = @(Get-ObjectPropertyValue $Feedback 'option_analysis' @())
     }
+    if (Get-Command Add-ProgressSeen -ErrorAction SilentlyContinue) { try { Add-ProgressSeen -Question $Question -Selected $Selected -Correct $Correct } catch { } }
     Set-ObjectPropertyValue $Session 'results' $results
 }
 
@@ -377,9 +378,9 @@ function Start-QuizPage {
     }
 
     Clear-ContentPanel
-    $head = New-PageHeader '20 题 · 30 分钟' '先选答案，再用一句话说理由；错题会像老师一样拆开讲。'
+    $head = New-PageHeader '20 题 · 30 分钟' '先选答案，再用一句话说理由；大肥鱼会把错题拆开讲给你听。'
     $script:ContentPanel.Controls.Add($head)
-    $status = New-UiCard -Width 1060 -Height 78
+    $status = New-UiCard -Width $script:UiContentWidth -Height 78
     $status.Location = New-Object System.Drawing.Point(0, 112)
     $script:ContentPanel.Controls.Add($status)
     $timer = New-UiLabel -Text '30:00' -Size 24 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -391,7 +392,7 @@ function Start-QuizPage {
     $focus = New-UiLabel -Text ("重点题 {0}/20 · 主攻 {1}" -f [int](Get-ObjectPropertyValue $plan 'focus_count' 0), (Get-TypeDisplayName ([string](Get-ObjectPropertyValue $plan 'main_type' '')))) -Size 13 -Color $script:UiMutedColor
     $focus.Location = New-Object System.Drawing.Point(735, 28)
     $status.Controls.Add($focus)
-    $card = New-UiCard -Width 1060 -Height 680
+    $card = New-UiCard -Width $script:UiContentWidth -Height 680
     $card.Location = New-Object System.Drawing.Point(0, 208)
     $script:ContentPanel.Controls.Add($card)
     $exit = New-UiButton -Text '保存并退出' -Width 160 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
@@ -530,13 +531,13 @@ function Show-QuizQuestion {
         $prevAnswer = [string](Get-ObjectPropertyValue $previous 'userAnswer' '')
         $prevError = [string](Get-ObjectPropertyValue $previous 'errorType' '')
         $prevLine = "上次你选了 $prevAnswer" + $(if ($prevError) { "（$prevError）" } else { '' }) + "。这次先重新定位，不要背上次的字母。"
-        $prevLabel = New-UiLabel -Text $prevLine -Size 14 -Color $script:UiDanger -MaxWidth 1000
+        $prevLabel = New-UiLabel -Text $prevLine -Size 14 -Color $script:UiDanger -MaxWidth $script:UiInnerWidth
         $prevLabel.Location = New-Object System.Drawing.Point(22, $y)
         $ui.Card.Controls.Add($prevLabel)
         $y += [Math]::Max(28, $prevLabel.PreferredHeight + 8)
     }
     if ($display.Shuffled) {
-        $shuffleLabel = New-UiLabel -Text '这次选项顺序已打乱：注意选项内容，不要按上次的 A/B/C/D 记答案。' -Size 14 -Color $script:UiAccent -MaxWidth 1000
+        $shuffleLabel = New-UiLabel -Text '这次选项顺序已打乱：注意选项内容，不要按上次的 A/B/C/D 记答案。' -Size 14 -Color $script:UiAccent -MaxWidth $script:UiInnerWidth
         $shuffleLabel.Location = New-Object System.Drawing.Point(22, $y)
         $ui.Card.Controls.Add($shuffleLabel)
         $y += [Math]::Max(28, $shuffleLabel.PreferredHeight + 8)
@@ -548,7 +549,7 @@ function Show-QuizQuestion {
         if ($passage.Length -gt 0) {
             $pb = New-Object System.Windows.Forms.RichTextBox
             $pb.Location = New-Object System.Drawing.Point(20, $y)
-            $pb.Width = 1010; $pb.Height = 175
+            $pb.Width = $script:UiInnerWidth; $pb.Height = 175
             $pb.ReadOnly = $true; $pb.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
             $pb.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244); $pb.ForeColor = $script:UiTextColor
             $pb.Font = New-Object System.Drawing.Font($script:UiFontName, 14)
@@ -558,7 +559,7 @@ function Show-QuizQuestion {
         }
     }
     if ($q.type -like 'listening*') {
-        $info = New-UiLabel -Text '先播放听力，听完再显示选项。播放次数会被记录下来，供老师评估参考。' -Size 15 -Color $script:UiMutedColor -MaxWidth 1000
+        $info = New-UiLabel -Text '先播放听力，听完再显示选项。播放次数会被记录下来，供大肥鱼参考。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
         $info.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($info)
         $y += [Math]::Max(30, $info.PreferredHeight + 8)
@@ -610,7 +611,7 @@ function Show-QuizQuestion {
             return
         }
     }
-    $stemLabel = New-UiLabel -Text ([string]$q.stem) -Size 18 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiTextColor -MaxWidth 1000
+    $stemLabel = New-UiLabel -Text ([string]$q.stem) -Size 18 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiTextColor -MaxWidth $script:UiInnerWidth
     $stemLabel.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($stemLabel)
     $y += [Math]::Max(38, $stemLabel.PreferredHeight + 10)
@@ -618,7 +619,7 @@ function Show-QuizQuestion {
     if ($opts.Count -le 4) {
         $flow = New-Object System.Windows.Forms.FlowLayoutPanel
         $flow.Location = New-Object System.Drawing.Point(20, $y)
-        $flow.Width = 1010; $flow.Height = 170
+        $flow.Width = $script:UiInnerWidth; $flow.Height = 170
         $flow.FlowDirection = [System.Windows.Forms.FlowDirection]::TopDown
         $flow.WrapContents = $false
         $flow.AutoScroll = $true
@@ -638,7 +639,7 @@ function Show-QuizQuestion {
     } else {
         $combo = New-Object System.Windows.Forms.ComboBox
         $combo.Location = New-Object System.Drawing.Point(20, $y)
-        $combo.Width = 1010
+        $combo.Width = $script:UiInnerWidth
         $combo.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
         $combo.Font = New-Object System.Drawing.Font($script:UiFontName, 15)
         foreach ($o in $opts) {
@@ -651,19 +652,19 @@ function Show-QuizQuestion {
         $ui.OptionControls = $combo
         $y += 54
     }
-    $reasonLabel = New-UiLabel -Text '用一句话说理由，例如「我选 B，因为原文 however 后面说……」。' -Size 14 -Color $script:UiMutedColor -MaxWidth 1000
+    $reasonLabel = New-UiLabel -Text '用一句话说理由，例如「我选 B，因为原文 however 后面说……」。' -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $reasonLabel.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($reasonLabel)
     $y += [Math]::Max(26, $reasonLabel.PreferredHeight + 6)
     $reasonBox = New-Object System.Windows.Forms.TextBox
     $reasonBox.Location = New-Object System.Drawing.Point(20, $y)
-    $reasonBox.Width = 1010; $reasonBox.Height = 58; $reasonBox.Multiline = $true
+    $reasonBox.Width = $script:UiInnerWidth; $reasonBox.Height = 58; $reasonBox.Multiline = $true
     $reasonBox.Font = New-Object System.Drawing.Font($script:UiFontName, 15)
     $reasonBox.Text = [string](Get-ObjectPropertyValue $cur 'reason' '')
     $ui.Card.Controls.Add($reasonBox)
     $ui.ReasonBox = $reasonBox
     $y += 70
-    $reminder = New-UiLabel -Text '' -Size 14 -Color $script:UiAccent -MaxWidth 1000
+    $reminder = New-UiLabel -Text '' -Size 14 -Color $script:UiAccent -MaxWidth $script:UiInnerWidth
     $reminder.Location = New-Object System.Drawing.Point(20, $y)
     $reminder.Visible = $false
     $ui.Card.Controls.Add($reminder)
@@ -700,7 +701,7 @@ function Show-QuizQuestion {
         $previous = Get-WrongBookEntry ([string]$q.id)
         $skipDeep = $false
         if ($script:QuizUi.SkipRepeatCheck -and $script:QuizUi.SkipRepeatCheck.Checked) { $skipDeep = $true }
-        Show-UiProgress -Title '老师正在诊断这道题' -Text '先判断对错，再还原你的思路并逐项分析…'
+        Show-UiProgress -Title '大肥鱼正在看这道题' -Text '先判断对错，再还原你的思路并逐项分析…'
         try {
             $evaluation = Invoke-QuizEvaluation -Question $q -Selected $selected -Reason $reason -ReplayCount $replay -LocalCorrect $localCorrect -DisplayOptions $displayOptions -CorrectKey $correctKey -PreviousEntry $previous
             $feedback = Get-QuizTeacherFeedback -Question $q -Selected $selected -UserReason $reason -ReplayCount $replay -Correct $localCorrect -DisplayOptions $displayOptions -CorrectKey $correctKey -PreviousEntry $previous -SkipDeep:$skipDeep
@@ -755,10 +756,12 @@ function Show-QuizFeedback {
     $fb = Get-ObjectPropertyValue $cur 'feedback' $null
     $correct = [bool](Get-ObjectPropertyValue $cur 'correct' $false)
     $ui.Card.Controls.Clear()
+    $mascot = New-MascotPicture $(if ($correct) { 'happy' } else { 'encourage' }) 104
+    if ($mascot) { $mascot.Location = New-Object System.Drawing.Point(($script:UiContentWidth - 130), 12); $ui.Card.Controls.Add($mascot) }
     $ui.ShownFeedback = $true
     $y = 16
     $bannerColor = if ($correct) { $script:UiGood } else { $script:UiDanger }
-    $title = New-UiLabel -Text $(if ($correct) { '答对了 · 第 ' + ($idx + 1) + ' 题' } else { '这题先记动作 · 第 ' + ($idx + 1) + ' 题' }) -Size 23 -Style ([System.Drawing.FontStyle]::Bold) -Color $bannerColor
+    $title = New-UiLabel -Text $(if ($correct) { '诶嘿，答对啦 · 第 ' + ($idx + 1) + ' 题' } else { '唔…这题先记个小动作 · 第 ' + ($idx + 1) + ' 题' }) -Size 23 -Style ([System.Drawing.FontStyle]::Bold) -Color $bannerColor -MaxWidth ($script:UiContentWidth - 170)
     $title.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($title)
     $y += 42
@@ -767,12 +770,12 @@ function Show-QuizFeedback {
     $err = [string](Get-ObjectPropertyValue $ev 'error_type' '')
     $correctKey = [string](Get-ObjectPropertyValue $cur 'correctKey' $q.answer)
     $summary = "你的答案：$(Get-ObjectPropertyValue $cur 'selected' '') · 正确答案：$correctKey · 理由质量：$reasonQ · 错误类型：$err"
-    $sl = New-UiLabel -Text $summary -Size 15 -Color $script:UiMutedColor -MaxWidth 1000
+    $sl = New-UiLabel -Text $summary -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
     $sl.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($sl)
     $y += [Math]::Max(28, $sl.PreferredHeight + 6)
     if ($enc) {
-        $el = New-UiLabel -Text ('老师赠你一句：' + $enc) -Size 16 -Color $script:UiPrimaryDark -MaxWidth 1000
+        $el = New-UiLabel -Text ('大肥鱼：' + $enc) -Size 16 -Color $script:UiPrimaryDark -MaxWidth ($script:UiContentWidth - 170)
         $el.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($el)
         $y += [Math]::Max(28, $el.PreferredHeight + 6)
@@ -781,14 +784,14 @@ function Show-QuizFeedback {
     $learnedTwice = $false
     if ($prev) { $learnedTwice = [bool](Get-ObjectPropertyValue $prev 'learnedTwice' $false) }
     if ($learnedTwice) {
-        $repeatLabel = New-UiLabel -Text '这题已学习两遍；下面保留要点。可以直接点「跳过重复内容」进入下一题，或用「下一题」正常继续。' -Size 14 -Color $script:UiAccent -MaxWidth 1000
+        $repeatLabel = New-UiLabel -Text '这题已学习两遍；下面保留要点。可以直接点「跳过重复内容」进入下一题，或用「下一题」正常继续。' -Size 14 -Color $script:UiAccent -MaxWidth ($script:UiContentWidth - 170)
         $repeatLabel.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($repeatLabel)
         $y += [Math]::Max(30, $repeatLabel.PreferredHeight + 6)
     }
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Location = New-Object System.Drawing.Point(20, $y)
-    $box.Width = 1010; $box.Height = 330
+    $box.Width = $script:UiInnerWidth; $box.Height = 330
     $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
     $box.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
     $box.Font = New-Object System.Drawing.Font($script:UiFontName, 15)
@@ -862,7 +865,7 @@ function Complete-QuizRound {
     Clear-ContentPanel
     $head = New-PageHeader '这一轮结束了' '先看结果，再看错题画像。错题已经在错题本里，次日会优先重出。'
     $script:ContentPanel.Controls.Add($head)
-    $card = New-UiCard -Width 1060 -Height 430
+    $card = New-UiCard -Width $script:UiContentWidth -Height 430
     $card.Location = New-Object System.Drawing.Point(0, 112)
     $script:ContentPanel.Controls.Add($card)
     $l1 = New-UiLabel -Text ("答对 {0} / 已答 {1}" -f $summary.Correct, $summary.Answered) -Size 28 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark

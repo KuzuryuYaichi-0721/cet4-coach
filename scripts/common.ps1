@@ -130,6 +130,7 @@ function Initialize-AppData {
         (Get-ConfigValue 'paths.logs' 'data/logs'),
         (Get-ConfigValue 'paths.sessions' 'data/sessions'),
         (Get-ConfigValue 'paths.history' 'data/history'),
+        (Get-ConfigValue 'paths.progress' 'data/progress'),
         (Get-ConfigValue 'paths.libraryAudio' 'library/audio'),
         (Get-ConfigValue 'paths.sourceAudio' 'library/source_audio'),
         (Get-ConfigValue 'paths.temp' 'temp')
@@ -208,6 +209,26 @@ $script:UiAccent = [System.Drawing.Color]::FromArgb(232, 163, 61)
 $script:UiDanger = [System.Drawing.Color]::FromArgb(180, 70, 60)
 $script:UiGood = [System.Drawing.Color]::FromArgb(58, 130, 94)
 
+function Get-MascotPath {
+    param([string]$Expression = 'neutral')
+    return (Join-Path $script:CET4Root ('assets\mascot\fish-' + $Expression + '.png'))
+}
+
+function New-MascotPicture {
+    param([string]$Expression = 'neutral', [int]$Size = 72)
+    $p = Get-MascotPath $Expression
+    if (-not (Test-Path -LiteralPath $p)) { return $null }
+    try {
+        $img = [System.Drawing.Image]::FromFile($p)
+        $pb = New-Object System.Windows.Forms.PictureBox
+        $pb.Width = $Size; $pb.Height = $Size
+        $pb.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::Zoom
+        $pb.BackColor = [System.Drawing.Color]::Transparent
+        $pb.Image = $img
+        $pb.TabStop = $false
+        return $pb
+    } catch { return $null }
+}
 function Get-UiFont {
     param([int]$Size = 16, [System.Drawing.FontStyle]$Style = [System.Drawing.FontStyle]::Regular)
     return New-Object System.Drawing.Font($script:UiFontName, $Size, $Style, [System.Drawing.GraphicsUnit]::Point)
@@ -308,11 +329,28 @@ function Set-PageTimer {
 
 function Reset-ContentScroll {
     if ($null -eq $script:ContentPanel) { return }
+    $panel = $script:ContentPanel
     try {
-        $script:ContentPanel.AutoScrollPosition = New-Object System.Drawing.Point(0, 0)
-        $script:ContentPanel.VerticalScroll.Value = 0
-        $script:ContentPanel.HorizontalScroll.Value = 0
-        $script:ContentPanel.PerformLayout()
+        $panel.AutoScrollPosition = New-Object System.Drawing.Point(0, 0)
+        $panel.VerticalScroll.Value = 0
+        $panel.HorizontalScroll.Value = 0
+        $panel.PerformLayout()
+    } catch { }
+    # 控件刚加入时布局还没算完；用一次性 Timer 在消息循环里再置顶一次。
+    try {
+        if ($script:ScrollResetTimer) { $script:ScrollResetTimer.Stop(); $script:ScrollResetTimer.Dispose() }
+        $t = New-Object System.Windows.Forms.Timer
+        $t.Interval = 60
+        $t.Add_Tick({
+            try {
+                $script:ContentPanel.AutoScrollPosition = New-Object System.Drawing.Point(0, 0)
+                $script:ContentPanel.VerticalScroll.Value = 0
+                $script:ContentPanel.HorizontalScroll.Value = 0
+            } catch { }
+            try { $script:ScrollResetTimer.Stop(); $script:ScrollResetTimer.Dispose(); $script:ScrollResetTimer = $null } catch { }
+        })
+        $script:ScrollResetTimer = $t
+        $t.Start()
     } catch { }
 }
 
@@ -332,15 +370,15 @@ function Clear-ContentPanel {
 function New-PageHeader {
     param([string]$Title, [string]$Subtitle = '')
     $head = New-Object System.Windows.Forms.Panel
-    $head.Width = 1060
+    $head.Width = $script:UiContentWidth
     $head.Height = $(if ($Subtitle) { 96 } else { 72 })
     $head.BackColor = $script:UiBackground
     $head.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
-    $t = New-UiLabel -Text $Title -Size 30 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark -MaxWidth 1040
+    $t = New-UiLabel -Text $Title -Size 30 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark -MaxWidth ($script:UiContentWidth - 10)
     $t.Location = New-Object System.Drawing.Point(0, 0)
     $head.Controls.Add($t)
     if ($Subtitle) {
-        $s = New-UiLabel -Text $Subtitle -Size 14 -Color $script:UiMutedColor -MaxWidth 1020
+        $s = New-UiLabel -Text $Subtitle -Size 14 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 20)
         $s.Location = New-Object System.Drawing.Point(3, 56)
         $head.Controls.Add($s)
     }
@@ -374,11 +412,13 @@ function Show-UiProgress {
     $f.ControlBox = $false
     $f.BackColor = $script:UiBackground
     $f.TopMost = $true
-    $lbl = New-UiLabel -Text $Text -Size 14 -MaxWidth 460
-    $lbl.Location = New-Object System.Drawing.Point(24, 24)
+    $mascot = New-MascotPicture 'think' 62
+    if ($mascot) { $mascot.Location = New-Object System.Drawing.Point(18, 18); $f.Controls.Add($mascot) }
+    $lbl = New-UiLabel -Text $Text -Size 14 -MaxWidth 390
+    $lbl.Location = New-Object System.Drawing.Point(96, 24)
     $bar = New-Object System.Windows.Forms.ProgressBar
-    $bar.Location = New-Object System.Drawing.Point(26, 78)
-    $bar.Width = 450
+    $bar.Location = New-Object System.Drawing.Point(96, 82)
+    $bar.Width = 390
     $bar.Height = 20
     $bar.Style = [System.Windows.Forms.ProgressBarStyle]::Marquee
     $bar.MarqueeAnimationSpeed = 30

@@ -37,7 +37,7 @@ try {
     Write-Host "word=$($entry.word) meaning=$($wordObj.short_meaning)"
     $input = @($script:WordUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
     $input.Text = $wordObj.short_meaning
-    $btn = Find-Button $script:WordUi.Card '提交给老师'
+    $btn = Find-Button $script:WordUi.Card '交给大肥鱼'
     $btn.PerformClick(); [System.Windows.Forms.Application]::DoEvents()
     Write-Host "after meaning step=$($script:WordUi.Session.step)"
     if ($script:WordUi.Session.step -ne 'meaning_feedback') { throw 'meaning step did not reach feedback' }
@@ -47,7 +47,7 @@ try {
     if ($script:WordUi.Session.step -ne 'english') { throw 'did not reach english step' }
     $input = @($script:WordUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
     $input.Text = $entry.word
-    $btn = Find-Button $script:WordUi.Card '提交给老师'
+    $btn = Find-Button $script:WordUi.Card '交给大肥鱼'
     $btn.PerformClick(); [System.Windows.Forms.Application]::DoEvents()
     Write-Host "after english step=$($script:WordUi.Session.step)"
     $continue = @($script:WordUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.Button] -and $_.Text -eq '继续' })[0]
@@ -56,7 +56,7 @@ try {
     if ($script:WordUi.Session.step -ne 'sentence') { throw 'did not reach sentence step' }
     $input = @($script:WordUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
     $input.Text = "This is a simple $($entry.word) sentence."
-    $btn = Find-Button $script:WordUi.Card '提交给老师'
+    $btn = Find-Button $script:WordUi.Card '交给大肥鱼'
     $btn.PerformClick(); [System.Windows.Forms.Application]::DoEvents()
     Write-Host "after sentence step=$($script:WordUi.Session.step)"
     $continue = @($script:WordUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.Button] -and $_.Text -eq '继续' })[0]

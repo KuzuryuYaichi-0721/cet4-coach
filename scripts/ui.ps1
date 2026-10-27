@@ -12,6 +12,8 @@ function New-MainWindow {
         if ($wa.Width -gt 200) { $width = [Math]::Min($width, $wa.Width - 20) }
         if ($wa.Height -gt 200) { $height = [Math]::Min($height, $wa.Height - 20) }
     } catch { }
+    $script:UiContentWidth = [Math]::Max(760, [Math]::Min(1060, $width - 292))
+    $script:UiInnerWidth = $script:UiContentWidth - 50
     $form = New-Object System.Windows.Forms.Form
     $form.Text = [string](Get-ConfigValue 'appName' '四级教练 CET4Coach')
     $form.Width = $width
@@ -71,6 +73,13 @@ function New-MainWindow {
     $side.Padding = New-Object System.Windows.Forms.Padding(12)
     $middle.Controls.Add($side, 0, 0)
 
+    $avatar = New-MascotPicture 'neutral' 82
+    if ($avatar) { $avatar.Location = New-Object System.Drawing.Point(20, 12); $side.Controls.Add($avatar) }
+    $mName = New-UiLabel -Text '大肥鱼' -Size 15 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $mName.Location = New-Object System.Drawing.Point(22, 98); $side.Controls.Add($mName)
+    $mSub = New-UiLabel -Text '今天也一起学吧' -Size 11 -Color $script:UiMutedColor
+    $mSub.Location = New-Object System.Drawing.Point(23, 122); $side.Controls.Add($mSub)
+
     $navItems = @(
         @{ Text = '首页'; Action = { Show-HomePage } },
         @{ Text = '单词 30 分钟'; Action = { Show-WordPage } },
@@ -81,7 +90,7 @@ function New-MainWindow {
         @{ Text = '入门微课'; Action = { Show-CoursePage -FromMenu } },
         @{ Text = '设置与诊断'; Action = { Show-SettingsPage } }
     )
-    $y = 16
+    $y = 150
     $onboardingDone = [bool](Get-ObjectPropertyValue (Get-AppState) 'onboardingComplete' $false)
     foreach ($item in $navItems) {
         $b = New-UiButton -Text $item.Text -Width 212 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(239, 234, 222)) -ForeColor $script:UiTextColor
@@ -100,8 +109,12 @@ function New-MainWindow {
         $y += 56
     }
     $help = New-UiLabel -Text '学习记录只保存在本机 data 目录；题库不会上传。' -Size 12 -Color $script:UiMutedColor -MaxWidth 200
-    $help.Location = New-Object System.Drawing.Point(13, 620)
+    $help.Location = New-Object System.Drawing.Point(13, 600)
     $side.Controls.Add($help)
+    if ($height -ge 860) {
+        $full = New-MascotPicture 'fullbody' 170
+        if ($full) { $full.Width = 96; $full.Height = 150; $full.Location = New-Object System.Drawing.Point(40, 660); $side.Controls.Add($full) }
+    }
 
     $content = New-Object System.Windows.Forms.Panel
     $content.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -115,7 +128,7 @@ function New-MainWindow {
     $bottom.Dock = [System.Windows.Forms.DockStyle]::Fill
     $bottom.BackColor = [System.Drawing.Color]::FromArgb(239, 234, 222)
     $root.Controls.Add($bottom, 0, 2)
-    $status = New-UiLabel -Text '准备就绪。' -Size 12 -Color $script:UiMutedColor -MaxWidth 1000
+    $status = New-UiLabel -Text '准备就绪。' -Size 12 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $status.Location = New-Object System.Drawing.Point(16, 8)
     $bottom.Controls.Add($status)
     $script:StatusLabel = $status
@@ -124,6 +137,7 @@ function New-MainWindow {
         try {
             if ($script:OnLeavePage) { & $script:OnLeavePage }
             Stop-PageTimer
+            try { Save-PortableProgress -Silent } catch { }
             Stop-OwnPotPlayer
             Clear-ListeningTempWorkspace -Silent | Out-Null
         } catch { }
@@ -184,7 +198,7 @@ function Show-HomePage {
         $planStart = [datetime]::ParseExact([string](Get-ConfigValue 'plan.startDate' (Get-TodayString)), 'yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture)
         $planDay = [int][Math]::Max(1, [Math]::Min([int](Get-ConfigValue 'plan.days' 90), ((Get-Date).Date - $planStart.Date).Days + 1))
     } catch { }
-    $head = New-PageHeader '今天从哪里开始？' ((Get-EuropeanDateLabel (Get-Date)) + (' · 90 天计划第 {0} 天 · 每天只做两件事：单词 30 分钟、20 题。' -f $planDay))
+    $head = New-PageHeader '今天想先学哪一段呀？' ((Get-EuropeanDateLabel (Get-Date)) + (' · 90 天计划第 {0} 天 · 每天只做两件事：单词 30 分钟、20 题。' -f $planDay))
     $script:ContentPanel.Controls.Add($head)
 
     $checkin = Get-CheckinData
@@ -192,7 +206,7 @@ function Show-HomePage {
     $streak = Get-CheckinStreak $checkin
     $wordDone = if ($today) { [bool](Get-ObjectPropertyValue $today 'word' $false) } else { $false }
     $quizDone = if ($today) { [bool](Get-ObjectPropertyValue $today 'quiz' $false) } else { $false }
-    $statusCard = New-UiCard -Width 1060 -Height 82
+    $statusCard = New-UiCard -Width $script:UiContentWidth -Height 82
     $statusCard.Location = New-Object System.Drawing.Point(0, 110)
     $script:ContentPanel.Controls.Add($statusCard)
     $s1 = New-UiLabel -Text ("基础打卡：{0}   刷题：{1}   连续：{2} 天" -f $(if ($wordDone) { '已完成' } else { '未完成' }), $(if ($quizDone) { '已完成' } else { '未完成' }), $streak) -Size 17 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -200,10 +214,10 @@ function Show-HomePage {
     $statusCard.Controls.Add($s1)
 
     if (-not (Test-DeepSeekKeyPresent)) {
-        $banner = New-UiCard -Width 1060 -Height 84 -Color ([System.Drawing.Color]::FromArgb(255, 248, 226))
+        $banner = New-UiCard -Width $script:UiContentWidth -Height 84 -Color ([System.Drawing.Color]::FromArgb(255, 248, 226))
         $banner.Location = New-Object System.Drawing.Point(0, 204)
         $script:ContentPanel.Controls.Add($banner)
-        $bl = New-UiLabel -Text '还没有 DEEPSEEK_API_KEY：单词/题库/听力仍可用，但大模型评估与深度讲解会跳过。设置方法在「设置与诊断」。' -Size 15 -Color ([System.Drawing.Color]::FromArgb(130, 86, 20)) -MaxWidth 1000
+        $bl = New-UiLabel -Text '还没有 DEEPSEEK_API_KEY：单词/题库/听力仍可用，但大模型评估与深度讲解会跳过。设置方法在「设置与诊断」。' -Size 15 -Color ([System.Drawing.Color]::FromArgb(130, 86, 20)) -MaxWidth $script:UiInnerWidth
         $bl.Location = New-Object System.Drawing.Point(22, 20)
         $banner.Controls.Add($bl)
     }
@@ -217,7 +231,7 @@ function Show-HomePage {
     $quizDesc = if ($quizDone) { '今天的 20 题已完成。错题会在明天优先重出。' } else { '限时 30 分钟；至少 12 题来自仔细阅读/听力篇章，2—3 种题型混合。' }
     $cards = New-Object System.Windows.Forms.FlowLayoutPanel
     $cards.Location = New-Object System.Drawing.Point(0, $startY)
-    $cards.Size = New-Object System.Drawing.Size(1080, 620)
+    $cards.Size = New-Object System.Drawing.Size(($script:UiContentWidth + 20), 620)
     $cards.AutoScroll = $true
     $cards.WrapContents = $true
     $script:ContentPanel.Controls.Add($cards)
@@ -240,6 +254,55 @@ function Show-HomePage {
     }
     Set-StatusBar '今天先完成单词 30 分钟；有余力再做 20 题。'
     Reset-ContentScroll
+}
+
+function Add-ProgressToolsCard {
+    $progressCard = New-UiCard -Width $script:UiContentWidth -Height 250
+    $progressCard.Location = New-Object System.Drawing.Point(0, 720)
+    $script:ContentPanel.Controls.Add($progressCard)
+    $pt = New-UiLabel -Text '学习进度包（跨版本 / 换电脑）' -Size 21 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $pt.Location = New-Object System.Drawing.Point(20, 16)
+    $progressCard.Controls.Add($pt)
+    $pdesc = New-UiLabel -Text '每次答题、每轮结束、关闭程序都会更新 data/progress/latest.cet4progress.json。换电脑或换版本时导出/导入这个文件；题目按“题干+选项内容指纹”匹配，不靠数据库行号。旧版本没有的新题会保留为可识别的导入题，不会丢进度。' -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
+    $pdesc.Location = New-Object System.Drawing.Point(20, 58)
+    $progressCard.Controls.Add($pdesc)
+    $exportBtn = New-UiButton -Text '导出学习进度' -Width 220 -Height 46 -Size 15 -OnClick {
+        $dlg = New-Object System.Windows.Forms.SaveFileDialog
+        $dlg.Title = '导出学习进度包'
+        $dlg.Filter = 'CET4Coach 进度包 (*.cet4progress.json)|*.cet4progress.json|JSON (*.json)|*.json'
+        $dlg.FileName = ('CET4Coach-progress-' + (Get-Date).ToString('yyyyMMdd') + '.cet4progress.json')
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            try {
+                $r = Export-LearningProgress -Path $dlg.FileName
+                Show-AppMessage ("进度已导出。`n`n单词状态：{0} 条`n题目记录：{1} 条`n打卡：{2} 天`n`n文件：{3}" -f $r.Words, $r.Questions, $r.Checkins, $r.Path) '导出学习进度'
+                Show-SettingsPage
+            } catch {
+                Show-AppMessage ('导出失败：' + (Format-SafeError $_)) '导出学习进度' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            }
+        }
+    }
+    $exportBtn.Location = New-Object System.Drawing.Point(20, 135)
+    $progressCard.Controls.Add($exportBtn)
+    $importBtn = New-UiButton -Text '导入学习进度' -Width 220 -Height 46 -Size 15 -BackColor $script:UiAccent -OnClick {
+        $dlg = New-Object System.Windows.Forms.OpenFileDialog
+        $dlg.Title = '导入学习进度包'
+        $dlg.Filter = 'CET4Coach 进度包 (*.cet4progress.json)|*.cet4progress.json|JSON (*.json)|*.json'
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            Show-UiProgress -Title '导入学习进度' -Text '正在按内容指纹匹配题目，并保留旧版本没有的新题…'
+            try {
+                $r = Import-LearningProgress -Path $dlg.FileName
+                Show-AppMessage ("导入完成。`n`n匹配到当前题库：{0} 题`n当前题库没有、已保留：{1} 题`n单词状态：{2} 条`n打卡：{3} 天`n`n导入题会出现在题库中，标记为来自进度包。" -f $r.Matched, $r.Orphans, $r.Words, $r.Checkins) '导入学习进度'
+                Show-SettingsPage
+            } catch {
+                Show-AppMessage ('导入失败：' + (Format-SafeError $_)) '导入学习进度' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            } finally { Close-UiProgress }
+        }
+    }
+    $importBtn.Location = New-Object System.Drawing.Point(260, 135)
+    $progressCard.Controls.Add($importBtn)
+    $ppath = New-UiLabel -Text ('自动进度文件：' + (Get-PortableProgressPath)) -Size 12 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
+    $ppath.Location = New-Object System.Drawing.Point(20, 198)
+    $progressCard.Controls.Add($ppath)
 }
 
 function Show-SettingsPage {
@@ -266,12 +329,12 @@ function Show-SettingsPage {
         @{ K = 'PotPlayer'; V = $(if ($pot) { $pot } else { '未找到。请在 config.json 的 listening.potPlayer 填写完整路径。' }); C = $(if ($pot) { $script:UiGood } else { $script:UiDanger }) },
         @{ K = '缓存文件'; V = ('{0} 个（data/cache）' -f $cacheFiles); C = $script:UiTextColor }
     )
-    $card = New-UiCard -Width 1060 -Height 590
+    $card = New-UiCard -Width $script:UiContentWidth -Height 590
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $fieldsHost = New-Object System.Windows.Forms.Panel
     $fieldsHost.Location = New-Object System.Drawing.Point(0, 0)
-    $fieldsHost.Size = New-Object System.Drawing.Size(1040, 470)
+    $fieldsHost.Size = New-Object System.Drawing.Size(($script:UiContentWidth - 20), 470)
     $fieldsHost.AutoScroll = $true
     $fieldsHost.BackColor = $script:UiCard
     $card.Controls.Add($fieldsHost)
@@ -301,6 +364,7 @@ function Show-SettingsPage {
     $course = New-UiButton -Text '重看入门微课' -Width 180 -Height 46 -Size 15 -BackColor $script:UiAccent -OnClick { Show-CoursePage -FromMenu }
     $course.Location = New-Object System.Drawing.Point(465, $buttonY)
     $card.Controls.Add($course)
+    Add-ProgressToolsCard
     Set-StatusBar '环境检查不会上传任何文件。'
     Reset-ContentScroll
 }
@@ -311,7 +375,7 @@ function Show-ImportPage {
     $head = New-PageHeader '题库导入' '优先使用 cet-practice 的真实字段；按题干+选项 SHA256 去重，不重复导入。'
     $script:ContentPanel.Controls.Add($head)
     $report = Read-JsonFile (Get-CET4Path 'data/import_report.json') $null -Quiet
-    $card = New-UiCard -Width 1060 -Height 320
+    $card = New-UiCard -Width $script:UiContentWidth -Height 320
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $count = @(Get-QuestionBank).Count
@@ -325,7 +389,7 @@ function Show-ImportPage {
     )
     $info = New-Object System.Windows.Forms.RichTextBox
     $info.Location = New-Object System.Drawing.Point(20, 18)
-    $info.Size = New-Object System.Drawing.Size(1010, 175)
+    $info.Size = New-Object System.Drawing.Size($script:UiInnerWidth, 175)
     $info.ReadOnly = $true
     $info.BorderStyle = [System.Windows.Forms.BorderStyle]::None
     $info.BackColor = $script:UiCard; $info.ForeColor = $script:UiTextColor
@@ -366,7 +430,7 @@ function Show-ImportPage {
     $b2.Location = New-Object System.Drawing.Point(295, 215)
     $card.Controls.Add($b2)
 
-    $gapCard = New-UiCard -Width 1060 -Height 190
+    $gapCard = New-UiCard -Width $script:UiContentWidth -Height 190
     $gapCard.Location = New-Object System.Drawing.Point(0, 365)
     $script:ContentPanel.Controls.Add($gapCard)
     $gl = New-UiLabel -Text '缺口报告' -Size 18 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -377,7 +441,7 @@ function Show-ImportPage {
     $gapText = if ($report) {
         "目标题位 90×20=1800；重点题位 90×12=1080。`n实际唯一题量 $totalReported，重点 $focusReported。`n题库用间隔重出补足题位；缺口与来源已写入 data/import_report.json。"
     } else { '还没有导入报告。导入一次后，这里会显示各题型题量与缺口。' }
-    $gt = New-UiLabel -Text $gapText -Size 14 -Color $script:UiMutedColor -MaxWidth 1000
+    $gt = New-UiLabel -Text $gapText -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $gt.Location = New-Object System.Drawing.Point(20, 54)
     $gapCard.Controls.Add($gt)
     $openReport = New-UiButton -Text '打开完整缺口报告' -Width 210 -Height 42 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
@@ -399,7 +463,7 @@ function Show-ListeningPage {
     $pot = Resolve-PotPlayerPath
     $source = Get-CET4Path (Get-ConfigValue 'paths.sourceAudio' 'library/source_audio')
     $lib = Get-CET4Path (Get-ConfigValue 'paths.libraryAudio' 'library/audio')
-    $card = New-UiCard -Width 1060 -Height 300
+    $card = New-UiCard -Width $script:UiContentWidth -Height 300
     $card.Location = New-Object System.Drawing.Point(0, 100)
     $script:ContentPanel.Controls.Add($card)
     $lines = @(
@@ -411,7 +475,7 @@ function Show-ListeningPage {
     )
     $info = New-Object System.Windows.Forms.RichTextBox
     $info.Location = New-Object System.Drawing.Point(20, 18)
-    $info.Size = New-Object System.Drawing.Size(1010, 185)
+    $info.Size = New-Object System.Drawing.Size($script:UiInnerWidth, 185)
     $info.ReadOnly = $true
     $info.BorderStyle = [System.Windows.Forms.BorderStyle]::None
     $info.BackColor = $script:UiCard; $info.ForeColor = $script:UiTextColor
@@ -446,7 +510,7 @@ function Show-ListeningPage {
     $clean.Location = New-Object System.Drawing.Point(430, 220)
     $card.Controls.Add($clean)
 
-    $missingCard = New-UiCard -Width 1060 -Height 270
+    $missingCard = New-UiCard -Width $script:UiContentWidth -Height 270
     $missingCard.Location = New-Object System.Drawing.Point(0, 415)
     $script:ContentPanel.Controls.Add($missingCard)
     $mTitle = New-UiLabel -Text '缺失报告' -Size 18 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -454,7 +518,7 @@ function Show-ListeningPage {
     $missingCard.Controls.Add($mTitle)
     $missing = @(Read-JsonFile (Get-CET4Path 'data/audio_missing_report.json') @() -Quiet)
     $mText = if ($missing.Count -eq 0) { '目前没有缺失记录，或者还没整理过。' } else { (@($missing | Select-Object -First 8 | ForEach-Object { '套卷 {0} 缺 {1}' -f (Get-ObjectPropertyValue $_ 'suite' ''), ((Get-ObjectPropertyValue $_ 'missing_sections' @()) -join '/') }) -join "`n") }
-    $ml = New-UiLabel -Text $mText -Size 14 -Color $script:UiMutedColor -MaxWidth 1000
+    $ml = New-UiLabel -Text $mText -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $ml.Location = New-Object System.Drawing.Point(20, 54)
     $missingCard.Controls.Add($ml)
     Set-StatusBar '整理过程不会删除原始素材。'

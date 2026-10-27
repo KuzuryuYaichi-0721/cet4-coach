@@ -4,6 +4,8 @@ data/cache/*
 data/plans/*
 data/sessions/*
 data/history/*
+data/progress/*
+data/progress_seen.json
 data/backup/*
 data/llm_usage.json
 data/audio_missing_report.json

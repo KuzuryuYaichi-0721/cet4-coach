@@ -158,6 +158,7 @@ function Save-WordSession {
     param($Session)
     if ($null -eq $Session) { return }
     Write-JsonFile (Get-SessionPathForWords ([string](Get-ObjectPropertyValue $Session 'date' (Get-TodayString)))) $Session
+    if (Get-Command Save-PortableProgress -ErrorAction SilentlyContinue) { try { Save-PortableProgress -Silent } catch { } }
 }
 
 function Get-WordEntryFromSession {
@@ -261,15 +262,15 @@ function Test-EnglishWordAnswer {
 function Invoke-WordLlmCheck {
     param([string]$Word, [string]$Meaning, [string]$Sentence, [string]$UserAnswer, [string]$Kind)
     $system = if ($Kind -eq 'sentence') {
-        '你是温和的大学英语四级老师。判断学生用目标词造的短句是否体现了该词的意思。只输出 JSON，不要 markdown。JSON 字段：acceptable（true/false）、feedback（一句不超过 30 字的中文鼓励或提醒）。不纠拼写，不要求复杂句。'
+        '你是大肥鱼，DeepSeek 的鲸鱼娘：深蓝长发、女仆头饰，爱笑会 wink，偶尔发呆，但陪人学习时很认真。你像可爱少女一样说话，用“我/咱”，短句、软一点；不要用上位者的自称，也不要把对方当成被训的人。判断对方用目标词造的短句是否体现了该词的意思。只输出 JSON，不要 markdown。JSON 字段：acceptable（true/false）、feedback（一句不超过 30 字的中文鼓励或提醒）。不纠拼写，不要求复杂句。'
     } else {
-        '你是大学英语四级词汇老师。判断学生的中文释义、英文拼写或句子是否接近目标词。只输出 JSON，不要 markdown。JSON 字段：correct（true/false）、confidence（0-1）、feedback（一句不超过 25 字的中文反馈）、error_type（无/意思不准/拼写偏差/没体现词义）。'
+        '你是大肥鱼，DeepSeek 的鲸鱼娘：深蓝长发、女仆头饰，爱笑会 wink，偶尔发呆，但陪人学习时很认真。你像可爱少女一样说话，用“我/咱”，短句、软一点；不要用上位者的自称，也不要把对方当成被训的人。判断对方的中文释义、英文拼写或句子是否接近目标词。只输出 JSON，不要 markdown。JSON 字段：correct（true/false）、confidence（0-1）、feedback（一句不超过 25 字的中文反馈）、error_type（无/意思不准/拼写偏差/没体现词义）。'
     }
     $user = @"
 目标词：$Word
 核心中文释义：$Meaning
 真题/趣味句：$Sentence
-学生回答：$UserAnswer
+你的回答：$UserAnswer
 任务类型：$Kind
 "@
     $r = Invoke-DeepSeekChat -System $system -User $user -Purpose ('word_' + $Kind) -RequireJson -MaxTokens 220 -LogTag ('word-' + $Kind)
@@ -400,7 +401,7 @@ function Set-RichTextHighlight {
 
 function Add-WordResultLine {
     param($Parent, [string]$Text, [int]$Y, [System.Drawing.Color]$Color = $script:UiTextColor, [int]$Size = 15)
-    $lbl = New-UiLabel -Text $Text -Size $Size -Color $Color -MaxWidth 900
+    $lbl = New-UiLabel -Text $Text -Size $Size -Color $Color -MaxWidth $script:UiInnerWidth
     $lbl.Location = New-Object System.Drawing.Point(20, $Y)
     $Parent.Controls.Add($lbl)
     return $lbl
@@ -412,7 +413,7 @@ function Show-WordSessionSummary {
     $summary = Get-WordSessionSummary $Session
     $head = New-PageHeader '今天的单词任务' '未完成的词会自动进入下次复习。'
     $script:ContentPanel.Controls.Add($head)
-    $card = New-UiCard -Width 1060 -Height 470
+    $card = New-UiCard -Width $script:UiContentWidth -Height 470
     $card.Location = New-Object System.Drawing.Point(0, 105)
     $script:ContentPanel.Controls.Add($card)
     Add-WordResultLine $card '30 分钟到点，先休息一下。' 20 $script:UiPrimaryDark 22 | Out-Null
@@ -447,7 +448,7 @@ function Show-WordFeedbackView {
     $y += [Math]::Max(34, $titleLabel.PreferredHeight + 8)
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Location = New-Object System.Drawing.Point(20, $y)
-    $box.Width = 1010; $box.Height = 108; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $box.Width = $script:UiInnerWidth; $box.Height = 108; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
     $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box $en $word
     $card.Controls.Add($box)
@@ -459,7 +460,7 @@ function Show-WordFeedbackView {
     $y += [Math]::Max(28, $meaningLine.PreferredHeight + 6)
     $feedback = [string](Get-ObjectPropertyValue $Payload 'feedback' '')
     if (-not $feedback) { $feedback = [string](Get-ObjectPropertyValue $Payload 'message' '') }
-    $feedbackLine = Add-WordResultLine $card ("老师反馈：{0}" -f $feedback) $y $script:UiPrimaryDark 17
+    $feedbackLine = Add-WordResultLine $card ("大肥鱼：{0}" -f $feedback) $y $script:UiPrimaryDark 17
     $y += [Math]::Max(30, $feedbackLine.PreferredHeight + 8)
     $your = [string](Get-ObjectPropertyValue $Payload 'YourAnswer' '')
     if ($your) {
@@ -627,7 +628,7 @@ function Show-WordStep {
     $y += [Math]::Max(28, $tagLabel.PreferredHeight + 8)
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Location = New-Object System.Drawing.Point(20, $y)
-    $box.Width = 1010; $box.Height = 128; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $box.Width = $script:UiInnerWidth; $box.Height = 128; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
     $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box ([string](Get-ObjectPropertyValue $sentence 'en' '')) $word
     $card.Controls.Add($box)
@@ -635,11 +636,11 @@ function Show-WordStep {
     $prompt = ''
     $showTextBox = $true
     if ($step -eq 'meaning') {
-        $prompt = "这句话里 「$word」 是什么意思？写中文即可，不要求拼写。"
+        $prompt = "这句话里 「$word」 是什么意思呀？写中文就好，不要求拼写哦。"
     } elseif ($step -eq 'english') {
-        $prompt = "现在反过来：中文「$shortMeaning」对应的英文单词是什么？拼写小错没关系。"
+        $prompt = "现在反过来：中文「$shortMeaning」对应的英文单词是什么呀？拼写小错也没关系～"
     } elseif ($step -eq 'sentence') {
-        $prompt = "用 「$word」 造一个短句，能看出它的意思就行。不要追求复杂句。"
+        $prompt = "用 「$word」 造一个短句，能看出意思就好啦，不用写复杂句。"
     } elseif ($step -eq 'meaning_feedback' -or $step -eq 'english_feedback' -or $step -eq 'sentence_feedback') {
         $payload = Get-ObjectPropertyValue $s 'lastPayload' $null
         if ($null -eq $payload) { $payload = [pscustomobject]@{ feedback = '已完成这一步。' } }
@@ -650,14 +651,14 @@ function Show-WordStep {
     $y += [Math]::Max(36, $promptLabel.PreferredHeight + 10)
     $input = New-Object System.Windows.Forms.TextBox
     $input.Location = New-Object System.Drawing.Point(20, $y)
-    $input.Width = 1010
+    $input.Width = $script:UiInnerWidth
     $input.Height = 68
     $input.Multiline = $true
     $input.Font = New-Object System.Drawing.Font($script:UiFontName, 18)
     $input.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
     $card.Controls.Add($input)
     $y += 82
-    $submit = New-UiButton -Text '提交给老师' -Width 200 -OnClick {
+    $submit = New-UiButton -Text '交给大肥鱼' -Width 200 -OnClick {
         $s = $script:WordUi.Session
         $entry = Get-WordEntryFromSession $s
         $step = [string](Get-ObjectPropertyValue $s 'step' 'meaning')
@@ -676,10 +677,10 @@ function Show-WordStep {
         if ($step -eq 'meaning') {
             $local = Test-WordMeaningLocal -Word $word -InputText $answer -Meaning $meaning
             if ($local.Verdict -eq 'correct') {
-                $payload = [pscustomobject]@{ correct = $true; confidence = 0.95; feedback = '和核心释义对上了，很好。'; error_type = '无' }
+                $payload = [pscustomobject]@{ correct = $true; confidence = 0.95; feedback = '诶嘿，和核心释义对上啦～'; error_type = '无' }
             } else {
                 try {
-                    Show-UiProgress -Title '老师正在看你的释义' -Text '正在判断意思是否接近…'
+                    Show-UiProgress -Title '大肥鱼正在看你的释义' -Text '正在判断意思是否接近…'
                     $payload = Invoke-WordLlmCheck -Word $word -Meaning $meaning -Sentence ([string](Get-ObjectPropertyValue $sent 'en' '')) -UserAnswer $answer -Kind 'meaning'
                 } catch {
                     $payload = [pscustomobject]@{ correct = ($local.Verdict -eq 'uncertain'); confidence = 0.5; feedback = '大模型暂时不可用，先用本地释义对照。'; error_type = '本地判断' }
@@ -700,7 +701,7 @@ function Show-WordStep {
             Show-WordStep
         } elseif ($step -eq 'english') {
             $ok = Test-EnglishWordAnswer -Word $word -InputText $answer
-            $payload = [pscustomobject]@{ correct = $ok; feedback = $(if ($ok) { '拼写对上了，继续保持。' } else { "再记一次：$word。拼写大致对就可以。" }); YourAnswer = $answer }
+            $payload = [pscustomobject]@{ correct = $ok; feedback = $(if ($ok) { '拼写对啦，好耶～' } else { "再记一次：$word。拼写大致对就可以。" }); YourAnswer = $answer }
             $cur = Get-ObjectPropertyValue $s 'current' $null
             Set-ObjectPropertyValue $cur 'englishOk' $ok
             if (-not $ok) { Set-ObjectPropertyValue $cur 'state' 'unmastered' }
@@ -713,7 +714,7 @@ function Show-WordStep {
             $wordCount = @($answer -split '\s+' | Where-Object { $_ -match '[A-Za-z]' }).Count
             if ($contains -and $wordCount -ge 3) {
                 try {
-                    Show-UiProgress -Title '老师正在看你的句子' -Text '正在判断句子有没有体现词义…'
+                    Show-UiProgress -Title '大肥鱼正在看你的句子' -Text '正在判断句子有没有体现词义…'
                     $payload = Invoke-WordLlmCheck -Word $word -Meaning $meaning -Sentence ([string](Get-ObjectPropertyValue $sent 'en' '')) -UserAnswer $answer -Kind 'sentence'
                 } catch {
                     $payload = [pscustomobject]@{ acceptable = $true; feedback = '句子里有目标词，能看出意思，过关。' }
@@ -752,8 +753,8 @@ function Show-WordStep {
     $card.Controls.Add($skip)
     $card.Height = [Math]::Max(520, $y + 72)
     $script:WordUi.Input = $input
-    Reset-ContentScroll
     $input.Focus()
+    Reset-ContentScroll
 }
 
 function Show-WordPage {
@@ -779,7 +780,7 @@ function Show-WordPage {
     Clear-ContentPanel
     $head = New-PageHeader '单词 30 分钟' '先读句子猜意思；核心词再做中译英和造句。到点自动收尾。'
     $script:ContentPanel.Controls.Add($head)
-    $statusCard = New-UiCard -Width 1060 -Height 74
+    $statusCard = New-UiCard -Width $script:UiContentWidth -Height 74
     $statusCard.Location = New-Object System.Drawing.Point(0, 112)
     $script:ContentPanel.Controls.Add($statusCard)
     $timerLabel = New-UiLabel -Text '30:00' -Size 24 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -794,7 +795,7 @@ function Show-WordPage {
     $tempCount = [int](Get-ObjectPropertyValue $session 'tempCount' 0)
     $audioLabel.Text = if ($tempCount -gt 0) { "听力临时文件 $tempCount 个" } else { '今日暂无听力临时文件' }
 
-    $card = New-UiCard -Width 1060 -Height 500
+    $card = New-UiCard -Width $script:UiContentWidth -Height 500
     $card.Location = New-Object System.Drawing.Point(0, 208)
     $script:ContentPanel.Controls.Add($card)
     $exit = New-UiButton -Text '保存并退出' -Width 170 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
