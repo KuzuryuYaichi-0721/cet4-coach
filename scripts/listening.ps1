@@ -527,8 +527,7 @@ function New-ListeningDownloadedAudio {
     $sha = [Security.Cryptography.SHA256]::Create()
     $hash = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($text)))).Replace('-','').ToLowerInvariant().Substring(0,16)
     $sha.Dispose()
-    $out = Join-Path $dir ('tts-' + $hash + '.mp3')
-    if ((Test-Path -LiteralPath $out) -and (Test-DownloadedAudioFile $out)) { return $out }
+    $out = Join-Path $dir ('tts-' + $hash + '-' + (Get-Date).ToString('HHmmssfff') + '.mp3')
 
     $providers = @(
         @{ Name = 'youdao'; Url = 'https://dict.youdao.com/dictvoice?audio={0}&type=2' },
