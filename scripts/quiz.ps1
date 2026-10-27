@@ -866,7 +866,7 @@ function Show-QuizQuestion {
     $ui.Card.Height = [Math]::Max(680, $y + $(if ($script:UiContentWidth -lt 1020) { 132 } else { 78 }))
     $qChat = New-ChatCard -Key ('q:' + [string]$q.id) -Title '问大肥鱼这道题' -Subtitle '可以问定位、同义替换、干扰项、听力连读；提交前只给提示，不直接报答案。' -Height 400 -Question $q -Current $cur
     $qChat.Location = New-Object System.Drawing.Point(0, (208 + $ui.Card.Height + 16))
-    $script:ContentPanel.Controls.Add($qChat)
+    Add-QuizChatCard -Card $qChat
     Reset-ContentScroll
 }
 
@@ -955,7 +955,7 @@ function Show-QuizFeedback {
     $ui.Card.Height = [Math]::Max(700, $y + 74)
     $qChat = New-ChatCard -Key ('q:' + [string]$q.id) -Title '继续问这道题' -Subtitle '可以追问为什么错、每个选项怎么排除、原文哪一句对应；会带上你的答案和解析。' -Height 400 -Question $q -Current $cur
     $qChat.Location = New-Object System.Drawing.Point(0, (208 + $ui.Card.Height + 16))
-    $script:ContentPanel.Controls.Add($qChat)
+    Add-QuizChatCard -Card $qChat
     Reset-ContentScroll
 }
 

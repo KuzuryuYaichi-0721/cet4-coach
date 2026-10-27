@@ -3,6 +3,25 @@
 
 $script:ChatHistories = @{}
 
+$script:QuizChatCard = $null
+
+function Remove-QuizChatCard {
+    if ($script:QuizChatCard) {
+        try { if ($script:QuizChatCard.Parent) { $script:QuizChatCard.Parent.Controls.Remove($script:QuizChatCard) } } catch { }
+        try { $script:QuizChatCard.Dispose() } catch { }
+        $script:QuizChatCard = $null
+    }
+}
+
+function Add-QuizChatCard {
+    param($Card)
+    Remove-QuizChatCard
+    if ($Card) {
+        $script:QuizChatCard = $Card
+        $script:ContentPanel.Controls.Add($Card)
+    }
+}
+
 function Get-ChatHistory {
     param([string]$Key)
     if (-not $Key) { return @() }
