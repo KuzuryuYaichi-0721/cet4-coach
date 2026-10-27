@@ -25,6 +25,7 @@ if ($null -eq $script:Config) {
 . (Join-Path $PSScriptRoot 'scripts\import.ps1')
 . (Join-Path $PSScriptRoot 'scripts\checkin.ps1')
 . (Join-Path $PSScriptRoot 'scripts\progress.ps1')
+. (Join-Path $PSScriptRoot 'scripts\study.ps1')
 . (Join-Path $PSScriptRoot 'scripts\course.ps1')
 . (Join-Path $PSScriptRoot 'scripts\ui.ps1')
 

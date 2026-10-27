@@ -13,6 +13,7 @@ $script:Config = Read-JsonFile (Join-Path $root 'config.json')
 . (Join-Path $root 'scripts\import.ps1')
 . (Join-Path $root 'scripts\checkin.ps1')
 . (Join-Path $root 'scripts\progress.ps1')
+. (Join-Path $root 'scripts\study.ps1')
 . (Join-Path $root 'scripts\course.ps1')
 . (Join-Path $root 'scripts\ui.ps1')
 
@@ -50,6 +51,8 @@ try {
     Show-HomePage
     Start-QuizPage
     Shot 'quiz.png'
+    $script:ContentPanel.AutoScrollPosition = New-Object System.Drawing.Point(0, $script:ContentPanel.VerticalScroll.Maximum)
+    Shot 'quiz-bottom.png'
     if ($script:QuizUi -and $script:QuizUi.Session) {
         Write-Host "quiz session q: $($script:QuizUi.Session.questionIds.Count), index=$($script:QuizUi.Session.index)"
         $qs = $script:QuizUi.Session

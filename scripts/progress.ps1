@@ -216,6 +216,44 @@ function Save-PortableProgress {
     }
 }
 
+function Save-DailyProgress {
+    param([switch]$Silent)
+    $p = Get-PortableProgressPath
+    Save-PortableProgress -Silent:$Silent
+    $dir = Split-Path -Parent $p
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    $date = (Get-Date).ToString('yyyyMMdd')
+    $backup = Join-Path $dir ('backup-' + $date + '.cet4progress.json')
+    if (Test-Path -LiteralPath $p) { Copy-Item $p $backup -Force -ErrorAction SilentlyContinue }
+    $marker = Join-Path $dir ('notified-' + $date + '.flag')
+    $first = -not (Test-Path -LiteralPath $marker)
+    if ($first) {
+        try { Set-Content -LiteralPath $marker -Value (Get-Date).ToString('o') -Encoding ascii } catch { }
+    }
+    return [pscustomobject]@{ FirstTime = $first; Package = $p; Backup = $backup; Date = $date }
+}
+
+function Show-DailyProgressSaved {
+    try {
+        $r = Save-DailyProgress -Silent
+        if (-not $r.FirstTime) { return }
+        $text = @"
+今天的进度已经自动保存：
+$($r.Package)
+
+同日备份：
+$($r.Backup)
+
+建议把整个 data 文件夹复制到 U 盘或网盘；换电脑时用“设置与诊断 → 学习进度包 → 导出/导入”。
+"@
+        Set-StatusBar '今日进度已保存，建议备份 data 文件夹。'
+        Show-AppMessage $text '今日进度已保存' ([System.Windows.Forms.MessageBoxIcon]::Information)
+    } catch {
+        Write-CET4Log -Category 'progress' -Level 'WARN' -Message ('每日保存提醒失败: ' + (Format-SafeError $_))
+    }
+}
+
+
 function Resolve-QuestionRecord {
     param($Record, $Bank, $ByKey, $ByStem)
     if ($null -eq $Record) { return $null }

@@ -555,11 +555,16 @@ function Show-QuizQuestion {
             $pb.Font = New-Object System.Drawing.Font($script:UiFontName, 14)
             $pb.Text = $passage
             $ui.Card.Controls.Add($pb)
+            $pb.Add_DoubleClick({
+                $s2 = $script:QuizUi.Session
+                $q2 = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s2 'index' 0)]
+                Show-QuestionReadingWindow -Question $q2
+            })
             $y += 188
         }
     }
     if ($q.type -like 'listening*') {
-        $info = New-UiLabel -Text '先播放听力，听完再显示选项。播放次数会被记录下来，供大肥鱼参考。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
+        $info = New-UiLabel -Text '先播放听力，听完再显示选项。有原音频用原音频；没有时用浏览器英语语音朗读（电脑合成音），会打开一个独立播放窗。播放次数会记录。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
         $info.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($info)
         $y += [Math]::Max(30, $info.PreferredHeight + 8)
@@ -568,27 +573,37 @@ function Show-QuizQuestion {
             $cur = Get-ObjectPropertyValue $s 'current' $null
             $q = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s 'index' 0)]
             $path = Get-QuizAudioPath $q
+            $src = '原音频'
             if (-not $path) {
-                Show-AppMessage '这道题缺少音频。按规则应标记“缺音频”并跳过；请补充 library/audio 后再来。' '缺音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
-                return
+                $text = Get-QuestionTranscript $q
+                if (-not $text -or -not (Test-ListeningSpeechAvailable)) {
+                    Show-AppMessage '这道题没有原音频，浏览器语音也不可用。可以先点“我不会，逐词讲解”看听力文本。' '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                    return
+                }
+                $src = '浏览器语音'
             }
             try {
-                Start-ListeningPlayback -Path $path | Out-Null
+                if ($path) {
+                    Start-ListeningPlayback -Path $path | Out-Null
+                } else {
+                    Start-BrowserListening -Text $text -QuestionId ([string]$q.id) | Out-Null
+                }
                 $cur.replayCount = [int](Get-ObjectPropertyValue $cur 'replayCount' 0) + 1
                 Set-ObjectPropertyValue $cur 'replayCount' $cur.replayCount
                 Set-ObjectPropertyValue $s 'current' $cur
                 Save-QuizSession $s
                 $script:QuizUi.PlayCountLabel.Text = ('已播放 {0} 次' -f $cur.replayCount)
-                Set-StatusBar ('已调用 PotPlayer 播放；本次是第 {0} 次回放。' -f $cur.replayCount)
+                Set-StatusBar ('已播放（{1}）；本次是第 {0} 次回放。' -f $cur.replayCount, $src)
             } catch {
                 Show-AppMessage ('播放失败：' + (Format-SafeError $_)) '播放' ([System.Windows.Forms.MessageBoxIcon]::Warning)
             }
         }
         $play.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($play)
-        $script:QuizUi.PlayCountLabel = New-UiLabel -Text ('已播放 {0} 次' -f [int](Get-ObjectPropertyValue $cur 'replayCount' 0)) -Size 14 -Color $script:UiMutedColor
-        $script:QuizUi.PlayCountLabel.Location = New-Object System.Drawing.Point(230, $y + 12)
-        $ui.Card.Controls.Add($script:QuizUi.PlayCountLabel)
+        $playCount = New-UiLabel -Text ('已播放 {0} 次' -f [int](Get-ObjectPropertyValue $cur 'replayCount' 0)) -Size 14 -Color $script:UiMutedColor
+        $playCount.Location = New-Object System.Drawing.Point -ArgumentList 230, ($y + 12)
+        $ui.Card.Controls.Add($playCount)
+        $script:QuizUi | Add-Member -NotePropertyName PlayCountLabel -NotePropertyValue $playCount -Force
         $showOpts = New-UiButton -Text '我已听完，显示选项' -Width 230 -Height 48 -BackColor $script:UiAccent -OnClick {
             $s = $script:QuizUi.Session
             $cur = Get-ObjectPropertyValue $s 'current' $null
@@ -742,7 +757,24 @@ function Show-QuizQuestion {
     }
     $skip.Location = New-Object System.Drawing.Point(280, $y)
     $ui.Card.Controls.Add($skip)
-    $ui.Card.Height = [Math]::Max(620, $y + 78)
+    $studyLabel = if ($q.type -like 'listening*') { '听不懂？逐词讲解' } else { '我不会，逐词讲解' }
+    $study = New-UiButton -Text $studyLabel -Width 230 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(255, 209, 102)) -ForeColor $script:UiPrimaryDark -OnClick {
+        $s2 = $script:QuizUi.Session
+        $cur2 = Get-ObjectPropertyValue $s2 'current' $null
+        $q2 = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s2 'index' 0)]
+        if ($cur2) { Set-ObjectPropertyValue $cur2 'usedHelp' $true; Set-ObjectPropertyValue $s2 'current' $cur2; Save-QuizSession $s2 }
+        Show-QuestionStudyWindow -Question $q2
+    }
+    if ($script:UiContentWidth -lt 1020) { $study.Location = New-Object System.Drawing.Point(20, ($y + 60)) } else { $study.Location = New-Object System.Drawing.Point(540, $y) }
+    $ui.Card.Controls.Add($study)
+    $read = New-UiButton -Text '全屏阅读' -Width 170 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark -OnClick {
+        $s2 = $script:QuizUi.Session
+        $q2 = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s2 'index' 0)]
+        Show-QuestionReadingWindow -Question $q2
+    }
+    if ($script:UiContentWidth -lt 1020) { $read.Location = New-Object System.Drawing.Point(270, ($y + 60)) } else { $read.Location = New-Object System.Drawing.Point(790, $y) }
+    $ui.Card.Controls.Add($read)
+    $ui.Card.Height = [Math]::Max(680, $y + $(if ($script:UiContentWidth -lt 1020) { 132 } else { 78 }))
     Reset-ContentScroll
 }
 
@@ -862,6 +894,7 @@ function Complete-QuizRound {
     }
     try { Clear-ListeningTempWorkspace -Silent | Out-Null } catch { }
     try { Save-QuizRoundHistory -Session $s -Questions $ui.Questions } catch { Write-CET4Log -Category 'quiz' -Level 'WARN' -Message ('保存本轮学习记录失败: ' + (Format-SafeError $_)) }
+    if ($award) { try { Show-DailyProgressSaved } catch { } }
     Clear-ContentPanel
     $head = New-PageHeader '这一轮结束了' '先看结果，再看错题画像。错题已经在错题本里，次日会优先重出。'
     $script:ContentPanel.Controls.Add($head)

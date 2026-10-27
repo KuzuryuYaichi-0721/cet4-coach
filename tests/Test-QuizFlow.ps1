@@ -48,6 +48,10 @@ try {
     $q = $script:QuizUi.Questions[0]
     $wrong = @($q.options | Where-Object { $_.key -ne $q.answer })[0].key
     Write-Host "q=$($q.id) type=$($q.type) answer=$($q.answer) choose=$wrong"
+    if ($q.type -like 'listening*') {
+        $showBtn = @($script:QuizUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.Button] -and $_.Text -eq '我已听完，显示选项' })[0]
+        if ($showBtn) { $showBtn.PerformClick(); [System.Windows.Forms.Application]::DoEvents() }
+    }
     Select-Option $wrong
     $reason = @($script:QuizUi.Card.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
     if (-not $reason) { throw 'reason textbox missing' }

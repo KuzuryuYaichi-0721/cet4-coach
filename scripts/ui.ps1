@@ -43,7 +43,7 @@ function New-MainWindow {
     $title = New-UiLabel -Text '四级教练' -Size 30 -Style ([System.Drawing.FontStyle]::Bold) -Color ([System.Drawing.Color]::White)
     $title.Location = New-Object System.Drawing.Point(24, 8)
     $top.Controls.Add($title)
-    $sub = New-UiLabel -Text '本地题库 · 30 分钟单词 · 20 题限时 · 错题画像' -Size 13 -Color ([System.Drawing.Color]::FromArgb(205, 226, 217))
+    $sub = New-UiLabel -Text '本地题库 · 单词 30 分钟 · 20 题（听力/阅读）· 错题画像' -Size 13 -Color ([System.Drawing.Color]::FromArgb(205, 226, 217))
     $sub.Location = New-Object System.Drawing.Point(27, 56)
     $top.Controls.Add($sub)
     $api = New-UiLabel -Text '' -Size 12 -Color ([System.Drawing.Color]::FromArgb(255, 230, 170))

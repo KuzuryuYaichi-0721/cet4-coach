@@ -1,4 +1,4 @@
-# 四级教练 · 大肥鱼版
+﻿# 四级教练 · 大肥鱼版
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207-5391FE?logo=powershell)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
@@ -8,15 +8,15 @@
 
 **形象说明：** [大肥鱼设定](docs/MASCOT.md) · [形象授权](MASCOT_LICENSE.md)。
 
-**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
+**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、听力篇章（原音频/浏览器语音）、题目页“我不会，逐词讲解”、全文翻译+逐词表、全屏阅读、每日自动保存与备份提醒、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
 
 **第一次用，先看 [从开始学习](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
 
-**详细使用手册：** [CET4Coach 详细使用手册 PDF](docs/CET4Coach-User-Manual.zh-CN.pdf)（23 页，含大肥鱼形象、跨版本进度包和本版 UI）。
+**详细使用手册：** [CET4Coach 详细使用手册 PDF](docs/CET4Coach-User-Manual.zh-CN.pdf)（含大肥鱼形象、听力/逐词讲解、全屏阅读、跨版本进度包）。
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.2.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 懒人包：[CET4Coach v1.3.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
 - 桌面版：`C:\Users\erwei\Desktop\CET4Coach`
 

@@ -582,6 +582,7 @@ function Complete-WordSessionUi {
         try {
             Add-WordCheckin -Date ([string](Get-ObjectPropertyValue $s 'date' (Get-TodayString))) -Minutes ([int](Get-ConfigValue 'wordSession.minutes' 30)) -WordsDone $summary.Done
         } catch { Write-CET4Log -Category 'checkin' -Level 'WARN' -Message (Format-SafeError $_) }
+        try { Show-DailyProgressSaved } catch { }
     }
     $msg = if ($clean) { $clean.Message } else { '临时听力清理已尝试，详见日志。' }
     if (-not $markBase) { $msg += ' 这次提前结束，不记基础打卡。' }

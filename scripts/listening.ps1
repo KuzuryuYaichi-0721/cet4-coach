@@ -333,6 +333,81 @@ function Get-AudioIndex {
     return @($idx)
 }
 
+function Get-QuestionTranscript {
+    param($Question)
+    if ($null -eq $Question) { return '' }
+    $mat = Get-QuizMaterial $Question
+    if ($null -eq $mat) { return '' }
+    $t = [string](Get-ObjectPropertyValue $mat 'transcript' '')
+    if (-not $t) { $t = [string](Get-ObjectPropertyValue $mat 'text' '') }
+    return $t
+}
+
+function Test-ListeningSpeechAvailable {
+    # 无原音频时用浏览器 speechSynthesis 朗读；Windows 10/11 自带 Edge/Chrome 即可。
+    return $true
+}
+
+function Start-BrowserListening {
+    param(
+        [Parameter(Mandatory)][string]$Text,
+        [string]$QuestionId = ''
+    )
+    if ([string]::IsNullOrWhiteSpace($Text)) { throw '没有可朗读的听力文本。' }
+    $dir = Get-ListeningTempDir
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    $safe = ($QuestionId -replace '[^A-Za-z0-9_-]', '_')
+    if (-not $safe) { $safe = 'listening' }
+    $htmlPath = Join-Path $dir ('speech-' + $safe + '.html')
+    $jsonText = (ConvertTo-Json -InputObject $Text -Compress).Replace('</','<\/')
+    $html = @"
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>大肥鱼听力</title>
+<style>
+body{margin:0;background:#0f1d46;color:#eef4ff;font:16px/1.6 'Microsoft YaHei',sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.card{width:min(560px,92vw);background:#16295e;border:1px solid #4d6bfe;border-radius:18px;padding:26px 30px;box-shadow:0 18px 50px #0008}
+h1{font-size:22px;margin:0 0 8px;color:#fff}
+p{margin:0 0 18px;color:#b9c8ef}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ffd166;margin-right:8px;animation:p 1.2s infinite}
+@keyframes p{50%{opacity:.25}}
+button{border:0;border-radius:10px;padding:11px 18px;font-size:15px;margin-right:10px;cursor:pointer;background:#4d6bfe;color:#fff}
+button.ghost{background:#263c7a}
+</style></head><body><div class="card">
+<h1>🎧 大肥鱼听力</h1>
+<p><span class="dot"></span><span id="status">正在朗读，听完再回答题页</span></p>
+<button onclick="speak()">重播</button>
+<button class="ghost" onclick="stopAll()">停止</button>
+<button class="ghost" onclick="window.close()">关闭</button>
+</div>
+<script>
+const text = $jsonText;
+let u = null;
+function speak() {
+  if (!('speechSynthesis' in window)) { document.getElementById('status').textContent = '这个浏览器不支持语音朗读'; return; }
+  speechSynthesis.cancel();
+  u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.92; u.pitch = 1.0; u.volume = 1.0;
+  u.onstart = () => document.getElementById('status').textContent = '正在朗读，听完再回答题页';
+  u.onend = () => document.getElementById('status').textContent = '播放结束，可以回答题页了';
+  speechSynthesis.speak(u);
+}
+function stopAll() { speechSynthesis.cancel(); document.getElementById('status').textContent = '已停止'; }
+window.onload = speak;
+</script></body></html>
+"@
+    [IO.File]::WriteAllText($htmlPath, $html, (New-Object Text.UTF8Encoding($false)))
+    $edgeCandidates = @()
+    if ($env:ProgramFiles) { $edgeCandidates += (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe') }
+    if (${env:ProgramFiles(x86)}) { $edgeCandidates += (Join-Path ${env:ProgramFiles(x86)} 'Microsoft\Edge\Application\msedge.exe') }
+    $edge = @($edgeCandidates | Where-Object { Test-Path -LiteralPath $_ }) | Select-Object -First 1
+    $uri = ([uri]$htmlPath).AbsoluteUri
+    if ($edge) {
+        return (Start-Process -FilePath $edge -ArgumentList @("--app=$uri", '--window-size=620,360') -PassThru)
+    }
+    return (Start-Process -FilePath $htmlPath -PassThru)
+}
+
 function Find-ListeningAudio {
     param([string]$Suite, [string]$Section)
     $want = ('{0}-Section{1}' -f $Suite, $Section).ToLowerInvariant()
