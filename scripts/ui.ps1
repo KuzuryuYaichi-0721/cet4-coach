@@ -252,6 +252,9 @@ function Show-HomePage {
             } catch { } finally { Close-UiProgress }
         }
     }
+    $homeChat = New-ChatCard -Key 'home' -Title '问大肥鱼' -Subtitle '听力技巧、阅读方法、时间安排、复盘问题都可以问；会结合本机学习状态。' -General -Height 400
+    $homeChat.Location = New-Object System.Drawing.Point(0, ($startY + 640))
+    $script:ContentPanel.Controls.Add($homeChat)
     Set-StatusBar '今天先完成单词 30 分钟；有余力再做 20 题。'
     Reset-ContentScroll
 }

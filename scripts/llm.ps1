@@ -216,6 +216,7 @@ function Invoke-DeepSeekChat {
     param(
         [Parameter(Mandatory)][string]$System,
         [Parameter(Mandatory)][string]$User,
+        [object[]]$Messages = $null,
         [string]$Purpose = 'general',
         [switch]$RequireJson,
         [string]$CacheKey = '',
@@ -267,12 +268,20 @@ function Invoke-DeepSeekChat {
     $apiKey = Get-DeepSeekApiKey
     Assert-DeepSeekBudget -BypassBudget:$BypassBudget
 
-    $body = [ordered]@{
-        model = $model
-        messages = @(
+    $chatMessages = @()
+    if ($Messages) {
+        foreach ($m in @($Messages)) {
+            $chatMessages += [ordered]@{ role = [string](Get-ObjectPropertyValue $m 'role' 'user'); content = [string](Get-ObjectPropertyValue $m 'content' '') }
+        }
+    } else {
+        $chatMessages = @(
             [ordered]@{ role = 'system'; content = $System },
             [ordered]@{ role = 'user'; content = $User }
         )
+    }
+    $body = [ordered]@{
+        model = $model
+        messages = $chatMessages
         temperature = $Temperature
         max_tokens = $MaxTokens
         stream = $false
@@ -289,7 +298,8 @@ function Invoke-DeepSeekChat {
     $headers = @{ Authorization = 'Bearer ' + $apiKey; Accept = 'application/json' }
     $bodyJson = $body | ConvertTo-Json -Depth 12 -Compress
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
-    $estimatePrompt = Estimate-DeepSeekTokens ($System + "`n" + $User)
+    $estimateText = if ($Messages) { (@($Messages | ForEach-Object { [string](Get-ObjectPropertyValue $_ 'content' '') }) -join "`n") } else { $System + "`n" + $User }
+    $estimatePrompt = Estimate-DeepSeekTokens $estimateText
     $attempt = 0
     $jsonRepairUsed = $false
     $lastError = $null

@@ -8,7 +8,7 @@
 
 **形象说明：** [大肥鱼设定](docs/MASCOT.md) · [形象授权](MASCOT_LICENSE.md)。
 
-**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、听力篇章（2020—2025 原音频，随发布包本地播放；内置播放器支持暂停/继续，也可选择 PotPlayer、Windows Media Player 或自定义播放器；设置页可一键清空今日学习进度，清空前自动备份）、题目页“我不会，逐词讲解”、全文翻译+逐词表、全屏阅读、每日自动保存与备份提醒、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
+**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、听力篇章（2020—2025 原音频，随发布包本地播放；内置播放器支持暂停/继续，也可选择 PotPlayer、Windows Media Player 或自定义播放器；设置页可一键清空今日学习进度，清空前自动备份；首页和题目/反馈页可接入 DeepSeek 对话提问）、题目页“我不会，逐词讲解”、全文翻译+逐词表、全屏阅读、每日自动保存与备份提醒、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
 
 **第一次用，先看 [从开始学习](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
 
@@ -16,7 +16,7 @@
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.3.9](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 懒人包：[CET4Coach v1.4.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
 - 桌面版：`C:\Users\erwei\Desktop\CET4Coach`
 - 发布 zip 已包含 `library/audio` 的 2020—2025 原音频（约 295MB）；源码 clone 不含音频包。
