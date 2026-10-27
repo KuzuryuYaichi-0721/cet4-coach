@@ -1,4 +1,4 @@
-﻿# 四级教练 · 大肥鱼版
+# 四级教练 · 大肥鱼版
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207-5391FE?logo=powershell)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
@@ -18,7 +18,8 @@
 
 - 懒人包：[CET4Coach v1.3.7](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
-- 桌面版：`C:\Users\erwei\Desktop\CET4Coach`\n- 发布 zip 已包含 `library/audio` 的 2020—2025 原音频（约 295MB）；源码 clone 不含音频包。
+- 桌面版：`C:\Users\erwei\Desktop\CET4Coach`
+- 发布 zip 已包含 `library/audio` 的 2020—2025 原音频（约 295MB）；源码 clone 不含音频包。
 
 > 重要数据诚实说明：`o-Sakurajimamai-o/cet-practice` 的仓库里没有题库 JSON，题库实际在 Release 包的 `seed/cet6.db`（含 CET4 行）。本系统从 **v1.1.0 Windows 发布包** 中读取该 SQLite，按真实字段导入。2020—2025 年 CET4 去重后只有 **1,668 道唯一客观题**，其中仔细阅读+听力篇章 **620 道**；这与“90 天 × 20 题 = 1,800 个题位、重点 1,080 个题位”不一致。系统不伪造题目，使用 7 天后可重出的间隔复习规则补足题位，并把缺口写进 [gap_report.json](data/gap_report.json) 与 [import_report.json](data/import_report.json)。
 
