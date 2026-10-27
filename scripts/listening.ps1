@@ -3,6 +3,8 @@
 
 $script:ActivePotPlayerPid = $null
 $script:ActivePotPlayerPath = $null
+$script:ActivePlaybackKind = $null
+$script:ListeningPaused = $false
 
 function Get-FFmpegInfo {
     $ffmpeg = [string](Get-ConfigValue 'listening.ffmpeg' 'ffmpeg')
@@ -811,6 +813,8 @@ function Start-ListeningPlayback {
     if ($backend -eq 'auto') {
         $backend = if (Resolve-PotPlayerPath) { 'potplayer' } else { 'builtin' }
     }
+    $script:ActivePlaybackKind = $backend
+    $script:ListeningPaused = $false
     if ($backend -eq 'potplayer') {
         $player = Resolve-PotPlayerPath
         if (-not $player) {
@@ -868,6 +872,8 @@ function Start-ListeningPlayback {
         try { if ($script:ActiveMediaPlayer) { $script:ActiveMediaPlayer.Close() } } catch { }
         $script:ActiveMediaPlayer = $null; $script:ActiveMediaPlayerPath = $null
     })
+    $script:ActivePlaybackKind = 'builtin'
+    $script:ListeningPaused = $false
     $mp.Play()
     return [pscustomobject]@{ Kind = 'builtin'; Process = $null; Player = $mp; Path = $Path }
 }
@@ -887,6 +893,37 @@ function Stop-OwnMediaPlayer {
     $script:ActiveMediaPlayer = $null
     $script:ActiveMediaPlayerPath = $null
     $script:ActiveMediaPlayerDelete = $false
+    if ($script:ActivePlaybackKind -eq 'builtin') { $script:ActivePlaybackKind = $null }
+    $script:ListeningPaused = $false
+}
+
+function Suspend-ListeningPlayback {
+    try {
+        if ($script:ActivePlaybackKind -eq 'builtin' -and $script:ActiveMediaPlayer) {
+            $script:ActiveMediaPlayer.Pause()
+            $script:ListeningPaused = $true
+            return $true
+        }
+    } catch { }
+    return $false
+}
+
+function Resume-ListeningPlayback {
+    try {
+        if ($script:ActivePlaybackKind -eq 'builtin' -and $script:ActiveMediaPlayer) {
+            $script:ActiveMediaPlayer.Play()
+            $script:ListeningPaused = $false
+            return $true
+        }
+    } catch { }
+    return $false
+}
+
+function Stop-AllListeningPlayback {
+    try { Stop-OwnPotPlayer } catch { }
+    try { Stop-OwnMediaPlayer } catch { }
+    $script:ActivePlaybackKind = $null
+    $script:ListeningPaused = $false
 }
 function Get-NeededAudioFromPlan {
     param($Plan)

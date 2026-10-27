@@ -563,6 +563,7 @@ function Get-SelectedQuizOption {
 }
 
 function Show-QuizQuestion {
+    try { Stop-AllListeningPlayback } catch { }
     $ui = $script:QuizUi
     $s = $ui.Session
     $idx = [int](Get-ObjectPropertyValue $s 'index' 0)
@@ -667,6 +668,7 @@ function Show-QuizQuestion {
                 Set-ObjectPropertyValue $s 'current' $cur
                 Save-QuizSession $s
                 $script:QuizUi.PlayCountLabel.Text = ('已播放 {0} 次' -f $cur.replayCount)
+                if ($script:QuizUi.PauseButton) { $script:QuizUi.PauseButton.Text = '暂停' }
                 Set-StatusBar ('已播放原音频；本次是第 {0} 次回放。' -f $cur.replayCount)
             } catch {
                 Show-AppMessage ('播放失败：' + (Format-SafeError $_)) '播放' ([System.Windows.Forms.MessageBoxIcon]::Warning)
@@ -674,8 +676,20 @@ function Show-QuizQuestion {
         }
         $play.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($play)
+        $pause = New-UiButton -Text '暂停' -Width 110 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+            if ($script:ListeningPaused) {
+                if (Resume-ListeningPlayback) { $pause.Text = '暂停'; Set-StatusBar '继续播放原音频。' }
+                else { Show-AppMessage '当前没有可继续的内置播放器；请重新点“播放听力”，或先在设置里选择内置播放器。' '暂停/继续' ([System.Windows.Forms.MessageBoxIcon]::Information) }
+            } else {
+                if (Suspend-ListeningPlayback) { $pause.Text = '继续'; Set-StatusBar '已暂停原音频。' }
+                else { Show-AppMessage '当前播放器不支持程序内暂停；请用播放器自己的暂停键，或在设置里改用内置播放器。' '暂停' ([System.Windows.Forms.MessageBoxIcon]::Information) }
+            }
+        }
+        $pause.Location = New-Object System.Drawing.Point(220, $y)
+        $ui.Card.Controls.Add($pause)
+        $script:QuizUi | Add-Member -NotePropertyName PauseButton -NotePropertyValue $pause -Force
         $playCount = New-UiLabel -Text ('已播放 {0} 次' -f [int](Get-ObjectPropertyValue $cur 'replayCount' 0)) -Size 14 -Color $script:UiMutedColor
-        $playCount.Location = New-Object System.Drawing.Point -ArgumentList 230, ($y + 12)
+        $playCount.Location = New-Object System.Drawing.Point -ArgumentList 345, ($y + 12)
         $ui.Card.Controls.Add($playCount)
         $script:QuizUi | Add-Member -NotePropertyName PlayCountLabel -NotePropertyValue $playCount -Force
         $showOpts = New-UiButton -Text '我已听完，显示选项' -Width 230 -Height 48 -BackColor $script:UiAccent -OnClick {
@@ -686,7 +700,7 @@ function Show-QuizQuestion {
             Save-QuizSession $s
             Show-QuizQuestion
         }
-        $showOpts.Location = New-Object System.Drawing.Point(440, $y)
+        $showOpts.Location = New-Object System.Drawing.Point(450, $y)
         $ui.Card.Controls.Add($showOpts)
         $y += 62
         if (-not [bool](Get-ObjectPropertyValue $cur 'optionsShown' $false)) {
@@ -778,6 +792,7 @@ function Show-QuizQuestion {
         $q = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s 'index' 0)]
         $selected = Get-SelectedQuizOption
         $reason = [string]$script:QuizUi.ReasonBox.Text.Trim()
+        try { Stop-AllListeningPlayback } catch { }
         if (-not $selected) { Show-AppMessage '先选一个答案。不会也先选一个，后面看讲解。' '还没选答案'; return }
         if ([string]::IsNullOrWhiteSpace($reason) -or $reason.Length -lt 4) { Show-AppMessage '用一句话说说为什么选它，哪怕理由是“我听到 but 后面像答案”。' '还差一句理由'; return }
         Set-ObjectPropertyValue $cur 'selected' $selected
