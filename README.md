@@ -3,10 +3,16 @@
 [![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?logo=windows)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207-5391FE?logo=powershell)](https://github.com/KuzuryuYaichi-0721/cet4-coach)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/KuzuryuYaichi-0721/cet4-coach)](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)
 
 面向北京地区、英语基础较弱学习者的 **Windows 纯本地** 四级备考系统。题库、学习记录、音频整理都在本机；大模型只接入 DeepSeek，用于回答评估、错题讲解、周复盘和一次性趣味句预生成。
 
 **第一次用，先看 [从今天开始：90 天学习路线](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
+
+## 下载
+
+- 懒人包：[CET4Coach v1.0.0](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
 
 > 重要数据诚实说明：`o-Sakurajimamai-o/cet-practice` 的仓库里没有题库 JSON，题库实际在 Release 包的 `seed/cet6.db`（含 CET4 行）。本系统从 **v1.1.0 Windows 发布包** 中读取该 SQLite，按真实字段导入。2020—2025 年 CET4 去重后只有 **1,668 道唯一客观题**，其中仔细阅读+听力篇章 **620 道**；这与“90 天 × 20 题 = 1,800 个题位、重点 1,080 个题位”不一致。系统不伪造题目，使用 7 天后可重出的间隔复习规则补足题位，并把缺口写进 [gap_report.json](data/gap_report.json) 与 [import_report.json](data/import_report.json)。
 
