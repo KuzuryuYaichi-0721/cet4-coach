@@ -6,10 +6,10 @@ $script:CET4Root = $PSScriptRoot
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+# 必须在创建任何窗口/调用 EnableVisualStyles 之前设置 DPI 模式。
+try { [System.Windows.Forms.Application]::SetHighDpiMode([System.Windows.Forms.HighDpiMode]::DpiUnaware) } catch { }
 try { [System.Windows.Forms.Application]::EnableVisualStyles() } catch { }
 try { [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false) } catch { }
-# 强制 DPI 不感知，由 Windows 整体缩放窗口；避免 150%/200% 下字体放大但坐标不放大导致文字堆叠。
-try { [System.Windows.Forms.Application]::SetHighDpiMode([System.Windows.Forms.HighDpiMode]::DpiUnaware) } catch { }
 
 . (Join-Path $PSScriptRoot 'scripts\common.ps1')
 $script:Config = Read-JsonFile (Join-Path $PSScriptRoot 'config.json') $null

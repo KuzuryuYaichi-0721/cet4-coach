@@ -16,7 +16,7 @@
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.3.5](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 懒人包：[CET4Coach v1.3.6](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
 - 桌面版：`C:\Users\erwei\Desktop\CET4Coach`
 

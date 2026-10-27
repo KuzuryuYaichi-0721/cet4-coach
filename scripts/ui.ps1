@@ -1,4 +1,4 @@
-﻿# ui.ps1 - main window, dashboard, settings and the two tool pages.
+# ui.ps1 - main window, dashboard, settings and the two tool pages.
 
 $script:NavButtons = @()
 $script:ContentPanel = $null
@@ -578,39 +578,42 @@ function Show-ListeningPage {
 function Show-StartupProgressDialog {
     try { Write-CET4Log -Category 'startup' -Level 'INFO' -Message '显示进度提醒' } catch { }
     $form = New-Object System.Windows.Forms.Form
+    $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::None
     $form.Text = '学习进度提醒'
-    $form.Size = New-Object System.Drawing.Size(780, 470)
-    $form.StartPosition = 'CenterParent'
+    $form.Size = New-Object System.Drawing.Size(700, 450)
+    $form.StartPosition = 'Manual'
+    $form.Left = 24
+    $form.Top = 64
     $form.FormBorderStyle = 'FixedDialog'
     $form.MaximizeBox = $false
     $form.MinimizeBox = $false
     $form.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
     $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10)
-    $pic = New-MascotPicture 'happy' 150
-    if ($pic) { $pic.Location = New-Object System.Drawing.Point(28, 45); $form.Controls.Add($pic) }
+    $pic = New-MascotPicture 'happy' 130
+    if ($pic) { $pic.Location = New-Object System.Drawing.Point(24, 45); $form.Controls.Add($pic) }
     $title = New-UiLabel -Text '先存一下今天的进度吧' -Size 25 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
-    $title.Location = New-Object System.Drawing.Point(205, 38); $form.Controls.Add($title)
-    $desc = New-UiLabel -Text '每次打开都会提醒一次：学习记录会自动保存到本机 data 目录。换电脑、重装或更新前，建议把整个 data 文件夹复制到 U 盘或网盘。' -Size 15 -Color $script:UiTextColor -MaxWidth 520
-    $desc.Location = New-Object System.Drawing.Point(208, 88); $form.Controls.Add($desc)
-    $path = New-UiLabel -Text ('进度包：' + (Get-PortableProgressPath)) -Size 12 -Color $script:UiMutedColor -MaxWidth 520
-    $path.Location = New-Object System.Drawing.Point(208, 175); $form.Controls.Add($path)
-    $tip = New-UiLabel -Text '也可以点“设置与诊断 → 学习进度包”导出/导入。' -Size 13 -Color $script:UiMutedColor -MaxWidth 520
-    $tip.Location = New-Object System.Drawing.Point(208, 205); $form.Controls.Add($tip)
+    $title.Location = New-Object System.Drawing.Point(180, 36); $form.Controls.Add($title)
+    $desc = New-UiLabel -Text '每次打开都会提醒一次：学习记录会自动保存到本机 data 目录。换电脑、重装或更新前，建议把整个 data 文件夹复制到 U 盘或网盘。' -Size 15 -Color $script:UiTextColor -MaxWidth 470
+    $desc.Location = New-Object System.Drawing.Point(182, 86); $form.Controls.Add($desc)
+    $path = New-UiLabel -Text ('进度包：' + (Get-PortableProgressPath)) -Size 12 -Color $script:UiMutedColor -MaxWidth 470
+    $path.Location = New-Object System.Drawing.Point(182, 178); $form.Controls.Add($path)
+    $tip = New-UiLabel -Text '也可以点“设置与诊断 → 学习进度包”导出/导入。' -Size 13 -Color $script:UiMutedColor -MaxWidth 470
+    $tip.Location = New-Object System.Drawing.Point(182, 208); $form.Controls.Add($tip)
     $status = New-UiLabel -Text '' -Size 13 -Color $script:UiGood -MaxWidth 500
-    $status.Location = New-Object System.Drawing.Point(208, 242); $form.Controls.Add($status)
+    $status.Location = New-Object System.Drawing.Point(182, 244); $form.Controls.Add($status)
     $save = New-UiButton -Text '立即保存进度' -Width 180 -Height 46 -Size 15 -OnClick {
         try {
             $r = Save-DailyProgress -Silent
             $status.Text = '已保存：' + $r.Package
         } catch { $status.Text = '保存失败：' + (Format-SafeError $_) }
     }
-    $save.Location = New-Object System.Drawing.Point(30, 350); $form.Controls.Add($save)
+    $save.Location = New-Object System.Drawing.Point(20, 340); $form.Controls.Add($save)
     $open = New-UiButton -Text '打开 data 文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
         try { Start-Process explorer.exe (Get-CET4Path 'data') } catch { }
     }
-    $open.Location = New-Object System.Drawing.Point(225, 350); $form.Controls.Add($open)
+    $open.Location = New-Object System.Drawing.Point(210, 340); $form.Controls.Add($open)
     $close = New-UiButton -Text '关闭' -Width 130 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(232, 235, 240)) -ForeColor $script:UiTextColor -OnClick { $form.Close() }
-    $close.Location = New-Object System.Drawing.Point(620, 350); $form.Controls.Add($close)
+    $close.Location = New-Object System.Drawing.Point(545, 340); $form.Controls.Add($close)
     $form.AcceptButton = $close
     $form.CancelButton = $close
     [void]$form.ShowDialog()

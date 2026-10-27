@@ -159,6 +159,7 @@ function Format-StudyContent {
 function Show-ReaderForm {
     param([string]$Title, [string]$Text, [string]$StudyText = '', [int]$AutoCloseMs = 0, [string]$ScreenshotPath = '', [int]$TestWidth = 0, [int]$TestHeight = 0)
     $form = New-Object System.Windows.Forms.Form
+    $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::None
     $form.Text = $Title
     $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
     $formW = [int][Math]::Min(1100, [Math]::Max(760, $wa.Width - 80))
