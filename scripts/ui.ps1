@@ -1,4 +1,4 @@
-# ui.ps1 - main window, dashboard, settings and the two tool pages.
+﻿# ui.ps1 - main window, dashboard, settings and the two tool pages.
 
 $script:NavButtons = @()
 $script:ContentPanel = $null

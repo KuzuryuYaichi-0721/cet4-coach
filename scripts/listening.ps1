@@ -329,8 +329,14 @@ function Import-ListeningLibrary {
 }
 
 function Get-AudioIndex {
-    $idx = Read-JsonFile (Get-ConfigValue 'paths.audioIndex' 'library/audio/index.json') @() -Quiet
-    return @($idx)
+    $idx = @(Read-JsonFile (Get-ConfigValue 'paths.audioIndex' 'library/audio/index.json') @() -Quiet)
+    foreach ($a in $idx) {
+        $p = [string](Get-ObjectPropertyValue $a 'path' '')
+        if ($p -and -not [IO.Path]::IsPathRooted($p)) {
+            Set-ObjectPropertyValue $a 'path' (Join-Path $script:CET4Root $p)
+        }
+    }
+    return $idx
 }
 
 function Get-QuestionTranscript {

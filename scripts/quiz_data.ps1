@@ -84,8 +84,7 @@ function Test-QuestionAudioAvailable {
     $suite = [string](Get-ObjectPropertyValue $audio 'suite' '')
     $section = [string](Get-ObjectPropertyValue $audio 'section' '')
     if (-not $suite -or -not $section) { return $false }
-    if ($null -ne (Find-ListeningAudio -Suite $suite -Section $section)) { return $true }
-    return ((Get-QuestionTranscript $Question) -and (Test-ListeningSpeechAvailable))
+    return ($null -ne (Find-ListeningAudio -Suite $suite -Section $section))
 }
 
 function Get-RecentQuizQuestionIds {
@@ -323,6 +322,8 @@ function Get-QuizAudioPath {
             }
         }
     }
+    $found = Find-ListeningAudio -Suite $suite -Section $section
+    if ($found) { return [string]$found.path }
     return $null
 }
 

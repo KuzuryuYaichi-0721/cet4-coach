@@ -8,7 +8,7 @@
 
 **形象说明：** [大肥鱼设定](docs/MASCOT.md) · [形象授权](MASCOT_LICENSE.md)。
 
-**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、听力篇章（原音频/内置 eSpeak 本地生成；可选择内置、PotPlayer、Windows Media Player 或自定义播放器）、题目页“我不会，逐词讲解”、全文翻译+逐词表、全屏阅读、每日自动保存与备份提醒、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
+**本版内容：** 你提供的大肥鱼 Q 版/立绘图片、DS 蓝配色、可爱少女陪练语气、听力篇章（2020—2025 原音频，随发布包本地播放；可选择内置、PotPlayer、Windows Media Player 或自定义播放器）、题目页“我不会，逐词讲解”、全文翻译+逐词表、全屏阅读、每日自动保存与备份提醒、跨版本 `.cet4progress.json` 学习进度包（按题目内容指纹匹配，旧版没有的新题会保留为导入题）。
 
 **第一次用，先看 [从开始学习](docs/START_LEARNING.md)。** 只想跑起来，见下面“快速开始”。
 
@@ -16,9 +16,9 @@
 
 ## 下载
 
-- 懒人包：[CET4Coach v1.3.6](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
+- 懒人包：[CET4Coach v1.3.7](https://github.com/KuzuryuYaichi-0721/cet4-coach/releases/latest)（下载 zip，解压，双击 `RUN.bat`）
 - 源码：`git clone https://github.com/KuzuryuYaichi-0721/cet4-coach.git`
-- 桌面版：`C:\Users\erwei\Desktop\CET4Coach`
+- 桌面版：`C:\Users\erwei\Desktop\CET4Coach`\n- 发布 zip 已包含 `library/audio` 的 2020—2025 原音频（约 295MB）；源码 clone 不含音频包。
 
 > 重要数据诚实说明：`o-Sakurajimamai-o/cet-practice` 的仓库里没有题库 JSON，题库实际在 Release 包的 `seed/cet6.db`（含 CET4 行）。本系统从 **v1.1.0 Windows 发布包** 中读取该 SQLite，按真实字段导入。2020—2025 年 CET4 去重后只有 **1,668 道唯一客观题**，其中仔细阅读+听力篇章 **620 道**；这与“90 天 × 20 题 = 1,800 个题位、重点 1,080 个题位”不一致。系统不伪造题目，使用 7 天后可重出的间隔复习规则补足题位，并把缺口写进 [gap_report.json](data/gap_report.json) 与 [import_report.json](data/import_report.json)。
 

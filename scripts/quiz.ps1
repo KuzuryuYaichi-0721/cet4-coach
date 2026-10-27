@@ -647,7 +647,7 @@ function Show-QuizQuestion {
         }
     }
     if ($q.type -like 'listening*') {
-        $info = New-UiLabel -Text '先播放听力，听完再显示选项。有原音频用原音频；没有时用内置英语语音在本地生成 WAV（失败再尝试在线下载），PotPlayer 本地播放，播放结束自动删除。播放次数会记录。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
+        $info = New-UiLabel -Text '先播放原音频，听完再显示选项。音频随程序放在 library/audio 中，不下载、不合成；播放次数会记录。' -Size 15 -Color $script:UiMutedColor -MaxWidth ($script:UiContentWidth - 170)
         $info.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($info)
         $y += [Math]::Max(30, $info.PreferredHeight + 8)
@@ -656,42 +656,19 @@ function Show-QuizQuestion {
             $cur = Get-ObjectPropertyValue $s 'current' $null
             $q = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s 'index' 0)]
             $path = Get-QuizAudioPath $q
-            $src = '原音频'
-            $text = ''
             if (-not $path) {
-                $text = Get-QuestionTranscript $q
-                if (-not $text) {
-                    Show-AppMessage '这道题没有听力原文，无法下载语音。' '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
-                    return
-                }
-                Show-UiProgress -Title '正在准备本地听力音频' -Text '用内置英语语音生成 WAV，再用 PotPlayer 本地播放；播放结束自动删除。'
-                try {
-                    $path = New-ListeningLocalAudio $q
-                    if ($path) {
-                        $src = '本地合成语音'
-                    } else {
-                        $path = New-ListeningDownloadedAudio $q
-                        $src = '在线下载语音'
-                    }
-                } catch {
-                    Close-UiProgress
-                    Show-AppMessage ('听力音频准备失败：' + (Format-SafeError $_)) '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
-                    return
-                } finally {
-                    Close-UiProgress
-                }
+                Show-AppMessage '这道题缺少原音频。请把 library/audio 音频包放回程序目录，或在“听力整理”里导入原音频。' '听力音频' ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                return
             }
             try {
-                $playback = Start-ListeningPlayback -Path $path -DeleteAfterPlay:($src -ne '原音频')
-                if ($src -ne '原音频' -and $playback.Process) { Register-ListeningFileCleanup -Path $path -ProcessId ([int]$playback.Process.Id) }
+                $playback = Start-ListeningPlayback -Path $path
                 $cur.replayCount = [int](Get-ObjectPropertyValue $cur 'replayCount' 0) + 1
                 Set-ObjectPropertyValue $cur 'replayCount' $cur.replayCount
                 Set-ObjectPropertyValue $s 'current' $cur
                 Save-QuizSession $s
                 $script:QuizUi.PlayCountLabel.Text = ('已播放 {0} 次' -f $cur.replayCount)
-                Set-StatusBar ('已播放（{1}）；本次是第 {0} 次回放。' -f $cur.replayCount, $src)
+                Set-StatusBar ('已播放原音频；本次是第 {0} 次回放。' -f $cur.replayCount)
             } catch {
-                if ($src -ne '原音频') { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
                 Show-AppMessage ('播放失败：' + (Format-SafeError $_)) '播放' ([System.Windows.Forms.MessageBoxIcon]::Warning)
             }
         }
