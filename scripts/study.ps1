@@ -157,35 +157,63 @@ function Format-StudyContent {
 }
 
 function Show-ReaderForm {
-    param([string]$Title, [string]$Text, [string]$StudyText = '', [int]$AutoCloseMs = 0, [string]$ScreenshotPath = '')
+    param([string]$Title, [string]$Text, [string]$StudyText = '', [int]$AutoCloseMs = 0, [string]$ScreenshotPath = '', [int]$TestWidth = 0, [int]$TestHeight = 0)
     $form = New-Object System.Windows.Forms.Form
     $form.Text = $Title
-    $form.Size = New-Object System.Drawing.Size(1100, 820)
-    $form.MinimumSize = New-Object System.Drawing.Size(760, 520)
+    $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $formW = [int][Math]::Min(1100, [Math]::Max(760, $wa.Width - 80))
+    $formH = [int][Math]::Min(820, [Math]::Max(520, $wa.Height - 80))
+    $form.Size = New-Object System.Drawing.Size -ArgumentList $formW, $formH
+    $form.MinimumSize = New-Object System.Drawing.Size(720, 480)
+    if ($TestWidth -gt 0) { $form.Width = $TestWidth }
+    if ($TestHeight -gt 0) { $form.Height = $TestHeight }
     $form.StartPosition = 'CenterParent'
     $form.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
     $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10)
-    $top = New-Object System.Windows.Forms.Panel
-    $top.Dock = 'Top'; $top.Height = 66; $top.BackColor = [System.Drawing.Color]::FromArgb(240, 245, 255)
-    $pic = New-MascotPicture 'think' 52
-    if ($pic) { $pic.Location = New-Object System.Drawing.Point(16, 7); $top.Controls.Add($pic) }
-    $titleLabel = New-UiLabel -Text $Title -Size 17 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
-    $titleLabel.Location = New-Object System.Drawing.Point(82, 10); $top.Controls.Add($titleLabel)
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Dock = 'Fill'; $box.ReadOnly = $true; $box.BorderStyle = 'None'
+    $box.WordWrap = $true; $box.ScrollBars = 'Vertical'; $box.DetectUrls = $false
     $box.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
     $box.ForeColor = [System.Drawing.Color]::FromArgb(38, 50, 56)
     $box.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 17)
     $box.Text = $Text
     $box.HideSelection = $false
+    $box.Margin = New-Object System.Windows.Forms.Padding(14, 8, 14, 12)
     $size = 17
     $full = $false
     $oldBorder = $form.FormBorderStyle
     $oldState = $form.WindowState
+
+    $root = New-Object System.Windows.Forms.TableLayoutPanel
+    $root.Dock = 'Fill'
+    $root.ColumnCount = 1
+    $root.RowCount = 2
+    [void]$root.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+    [void]$root.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 66)))
+    [void]$root.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+    $root.Padding = New-Object System.Windows.Forms.Padding(0)
+
+    $top = New-Object System.Windows.Forms.TableLayoutPanel
+    $top.Dock = 'Fill'
+    $top.ColumnCount = 2
+    $top.RowCount = 1
+    $top.BackColor = [System.Drawing.Color]::FromArgb(240, 245, 255)
+    [void]$top.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+    [void]$top.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 372)))
+    $top.Margin = New-Object System.Windows.Forms.Padding(0)
+
+    $titlePanel = New-Object System.Windows.Forms.Panel
+    $titlePanel.Dock = 'Fill'
+    $titlePanel.Margin = New-Object System.Windows.Forms.Padding(0)
+    $pic = New-MascotPicture 'think' 52
+    if ($pic) { $pic.Location = New-Object System.Drawing.Point(16, 7); $titlePanel.Controls.Add($pic) }
+    $titleLabel = New-UiLabel -Text $Title -Size 17 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
+    $titleLabel.Location = New-Object System.Drawing.Point(82, 10)
+    $titleLabel.AutoSize = $true
+    $titlePanel.Controls.Add($titleLabel)
+
     $flow = New-Object System.Windows.Forms.FlowLayoutPanel
-    $flow.Dock = 'Right'
-    $flow.Width = 372
-    $flow.Height = 56
+    $flow.Dock = 'Fill'
     $flow.FlowDirection = 'RightToLeft'
     $flow.WrapContents = $false
     $flow.Padding = New-Object System.Windows.Forms.Padding(0, 4, 8, 4)
@@ -205,10 +233,11 @@ function Show-ReaderForm {
     $btnClose = New-UiButton -Text '关闭' -Width 76 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(232, 235, 240)) -ForeColor $script:UiTextColor
     $btnClose.Add_Click({ $form.Close() })
     foreach ($b in @($btnClose, $btnFull, $btnPlus, $btnMinus)) { $flow.Controls.Add($b) }
-    $top.Controls.Add($flow)
-    $form.Controls.Add($box)
-    $form.Controls.Add($top)
-    $top.BringToFront()
+    $top.Controls.Add($titlePanel, 0, 0)
+    $top.Controls.Add($flow, 1, 0)
+    $root.Controls.Add($top, 0, 0)
+    $root.Controls.Add($box, 0, 1)
+    $form.Controls.Add($root)
     $form.Add_Shown({ $box.SelectionStart = 0; $box.ScrollToCaret() })
     if ($AutoCloseMs -gt 0) {
         $timer = New-Object System.Windows.Forms.Timer
@@ -218,7 +247,9 @@ function Show-ReaderForm {
             if ($ScreenshotPath) {
                 try {
                     $bmp = New-Object System.Drawing.Bitmap($form.Width, $form.Height)
-                    $form.DrawToBitmap($bmp, (New-Object System.Drawing.Rectangle(0, 0, $form.Width, $form.Height)))
+                    $g = [System.Drawing.Graphics]::FromImage($bmp)
+                    $g.CopyFromScreen($form.Left, $form.Top, 0, 0, $form.Size)
+                    $g.Dispose()
                     $bmp.Save($ScreenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
                     $bmp.Dispose()
                 } catch { }

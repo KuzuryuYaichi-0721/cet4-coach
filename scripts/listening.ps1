@@ -360,42 +360,109 @@ function Start-BrowserListening {
     if (-not $safe) { $safe = 'listening' }
     $htmlPath = Join-Path $dir ('speech-' + $safe + '.html')
     $jsonText = (ConvertTo-Json -InputObject $Text -Compress).Replace('</','<\/')
-    $html = @"
+    $htmlTemplate = @'
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <title>大肥鱼听力</title>
 <style>
 body{margin:0;background:#0f1d46;color:#eef4ff;font:16px/1.6 'Microsoft YaHei',sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}
-.card{width:min(560px,92vw);background:#16295e;border:1px solid #4d6bfe;border-radius:18px;padding:26px 30px;box-shadow:0 18px 50px #0008}
+.card{width:min(580px,92vw);background:#16295e;border:1px solid #4d6bfe;border-radius:18px;padding:26px 30px;box-shadow:0 18px 50px #0008}
 h1{font-size:22px;margin:0 0 8px;color:#fff}
-p{margin:0 0 18px;color:#b9c8ef}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ffd166;margin-right:8px;animation:p 1.2s infinite}
-@keyframes p{50%{opacity:.25}}
-button{border:0;border-radius:10px;padding:11px 18px;font-size:15px;margin-right:10px;cursor:pointer;background:#4d6bfe;color:#fff}
+p{margin:0 0 12px;color:#b9c8ef;min-height:24px}
+.hint{font-size:13px;color:#8fa5d8;margin:14px 0 0}
+button{border:0;border-radius:10px;padding:11px 18px;font-size:15px;margin:0 10px 10px 0;cursor:pointer;background:#4d6bfe;color:#fff}
+button.primary{font-size:18px;padding:14px 26px}
 button.ghost{background:#263c7a}
 </style></head><body><div class="card">
 <h1>🎧 大肥鱼听力</h1>
-<p><span class="dot"></span><span id="status">正在朗读，听完再回答题页</span></p>
-<button onclick="speak()">重播</button>
+<p id="status">正在准备语音…</p>
+<button class="primary" onclick="start()">▶ 开始播放</button>
 <button class="ghost" onclick="stopAll()">停止</button>
 <button class="ghost" onclick="window.close()">关闭</button>
+<div class="hint">浏览器需要一次点击才允许播放。若自动播放被拦截，点“开始播放”即可。</div>
 </div>
 <script>
-const text = $jsonText;
-let u = null;
-function speak() {
-  if (!('speechSynthesis' in window)) { document.getElementById('status').textContent = '这个浏览器不支持语音朗读'; return; }
-  speechSynthesis.cancel();
-  u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.92; u.pitch = 1.0; u.volume = 1.0;
-  u.onstart = () => document.getElementById('status').textContent = '正在朗读，听完再回答题页';
-  u.onend = () => document.getElementById('status').textContent = '播放结束，可以回答题页了';
-  speechSynthesis.speak(u);
+const text = __TEXT__;
+let chunks = [], idx = 0, playing = false, watchdog = null, voice = null, lastEvent = Date.now();
+function setStatus(s) { document.getElementById('status').textContent = s; }
+function splitText(t) {
+  t = (t || '').replace(/\s+/g, ' ').trim();
+  if (!t) return [];
+  const sentences = t.match(/[^.!?]+[.!?]+["']?|\S[^.!?]*$/g) || [t];
+  const out = [];
+  for (let sentence of sentences) {
+    sentence = sentence.trim();
+    if (!sentence) continue;
+    if (sentence.length <= 180) { out.push(sentence); continue; }
+    let words = sentence.split(' '), cur = '';
+    for (let w of words) {
+      if ((cur + ' ' + w).trim().length > 180) { if (cur) out.push(cur.trim()); cur = w; }
+      else { cur = (cur + ' ' + w).trim(); }
+    }
+    if (cur) out.push(cur.trim());
+  }
+  return out.filter(Boolean);
 }
-function stopAll() { speechSynthesis.cancel(); document.getElementById('status').textContent = '已停止'; }
-window.onload = speak;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices() || [];
+  voice = voices.find(v => /^en[-_]/i.test(v.lang) && /US|United States|Zira|Aria|Jenny|Guy/i.test(v.name + ' ' + v.lang))
+       || voices.find(v => /^en[-_]/i.test(v.lang)) || null;
+}
+function finish() {
+  playing = false; if (watchdog) { clearInterval(watchdog); watchdog = null; }
+  setStatus('播放结束，可以回答题页了');
+}
+function nextChunk() {
+  if (!playing) return;
+  if (idx >= chunks.length) { finish(); return; }
+  lastEvent = Date.now();
+  const u = new SpeechSynthesisUtterance(chunks[idx]);
+  u.lang = 'en-US'; u.rate = 0.90; u.pitch = 1.0; u.volume = 1.0;
+  if (voice) u.voice = voice;
+  u.onstart = () => { lastEvent = Date.now(); setStatus('正在朗读（' + (idx + 1) + '/' + chunks.length + '）'); };
+  u.onend = () => { if (!playing) return; lastEvent = Date.now(); idx++; setTimeout(nextChunk, 180); };
+  u.onerror = (e) => {
+    if (!playing) return;
+    if (e && e.error === 'interrupted') return;
+    lastEvent = Date.now(); idx++; setTimeout(nextChunk, 220);
+  };
+  try { speechSynthesis.speak(u); } catch (e) { finish(); setStatus('浏览器无法朗读，请改用逐词讲解看原文。'); }
+}
+function start() {
+  if (!('speechSynthesis' in window)) { setStatus('这个浏览器不支持语音朗读，请用逐词讲解看原文。'); return; }
+  speechSynthesis.cancel();
+  playing = true; idx = 0; lastEvent = Date.now();
+  setStatus('正在启动语音…');
+  if (watchdog) clearInterval(watchdog);
+  watchdog = setInterval(() => {
+    if (!playing || !('speechSynthesis' in window)) return;
+    if (speechSynthesis.paused) { try { speechSynthesis.resume(); } catch (e) { } }
+    if (!speechSynthesis.speaking && !speechSynthesis.pending && Date.now() - lastEvent > 8000 && idx < chunks.length) {
+      idx++; lastEvent = Date.now(); nextChunk();
+    }
+  }, 2500);
+  setTimeout(() => { if (playing && idx === 0 && !speechSynthesis.speaking) setStatus('自动播放被拦截了，请点“开始播放”。'); }, 1600);
+  nextChunk();
+}
+function stopAll() {
+  playing = false;
+  if (watchdog) { clearInterval(watchdog); watchdog = null; }
+  try { speechSynthesis.cancel(); } catch (e) { }
+  setStatus('已停止');
+}
+window.onload = () => {
+  chunks = splitText(text);
+  if ('speechSynthesis' in window) {
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  }
+  setStatus(chunks.length ? ('准备播放，共 ' + chunks.length + ' 段') : '没有可朗读的文本');
+  setTimeout(() => { if (chunks.length) start(); }, 400);
+};
 </script></body></html>
-"@
+'@
+    $html = $htmlTemplate.Replace('__TEXT__', $jsonText)
     [IO.File]::WriteAllText($htmlPath, $html, (New-Object Text.UTF8Encoding($false)))
     $edgeCandidates = @()
     if ($env:ProgramFiles) { $edgeCandidates += (Join-Path $env:ProgramFiles 'Microsoft\Edge\Application\msedge.exe') }
