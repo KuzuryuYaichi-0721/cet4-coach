@@ -241,10 +241,10 @@ function Show-CheckinPage {
         $calCard = $script:CalendarHost
         $calCard.Controls.Clear()
         $month = $script:CalendarMonth
-        $prev = New-UiButton -Text '上个月' -Width 100 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(220, 215, 203)) -ForeColor $script:UiTextColor -OnClick { $script:CalendarMonth = $script:CalendarMonth.AddMonths(-1); & $script:RenderCalendar }
+        $prev = New-UiButton -Text '上个月' -Width 100 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick { $script:CalendarMonth = $script:CalendarMonth.AddMonths(-1); & $script:RenderCalendar }
         $prev.Location = New-Object System.Drawing.Point(20, 14)
         $calCard.Controls.Add($prev)
-        $next = New-UiButton -Text '下个月' -Width 100 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(220, 215, 203)) -ForeColor $script:UiTextColor -OnClick { $script:CalendarMonth = $script:CalendarMonth.AddMonths(1); & $script:RenderCalendar }
+        $next = New-UiButton -Text '下个月' -Width 100 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick { $script:CalendarMonth = $script:CalendarMonth.AddMonths(1); & $script:RenderCalendar }
         $next.Location = New-Object System.Drawing.Point(135, 14)
         $calCard.Controls.Add($next)
         $title = New-UiLabel -Text ($month.ToString('yyyy年M月')) -Size 22 -Style ([System.Drawing.FontStyle]::Bold) -Color $script:UiPrimaryDark
@@ -268,12 +268,12 @@ function Show-CheckinPage {
             $cell = New-Object System.Windows.Forms.Panel
             $cell.Size = New-Object System.Drawing.Size($cellWidth, 50)
             $cell.Location = New-Object System.Drawing.Point((20 + $col * $cellStep), (112 + $row * 56))
-            $cell.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+            $cell.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
             $cell.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
             $check = Get-CheckinDay $data ($date.ToString('yyyy-MM-dd'))
             $numColor = $script:UiMutedColor
-            if ($check) { $cell.BackColor = [System.Drawing.Color]::FromArgb(231, 243, 236); $numColor = $script:UiPrimaryDark }
-            if ($date.Date -eq (Get-Date).Date) { $cell.BackColor = [System.Drawing.Color]::FromArgb(255, 242, 204); $numColor = [System.Drawing.Color]::FromArgb(120, 75, 20) }
+            if ($check) { $cell.BackColor = [System.Drawing.Color]::FromArgb(232, 241, 251); $numColor = $script:UiPrimaryDark }
+            if ($date.Date -eq (Get-Date).Date) { $cell.BackColor = [System.Drawing.Color]::FromArgb(227, 239, 252); $numColor = [System.Drawing.Color]::FromArgb(27, 79, 138) }
             $nl = New-UiLabel -Text ([string]$d) -Size 14 -Style ([System.Drawing.FontStyle]::Bold) -Color $numColor
             $nl.Location = New-Object System.Drawing.Point(7, 5)
             $cell.Controls.Add($nl)

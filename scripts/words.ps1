@@ -393,8 +393,8 @@ function Set-RichTextHighlight {
     foreach ($m in [regex]::Matches($Text, $regex, 'IgnoreCase')) {
         $Box.Select($m.Index, $m.Length)
         $Box.SelectionFont = New-Object System.Drawing.Font($script:UiFontName, 20, [System.Drawing.FontStyle]::Bold)
-        $Box.SelectionColor = [System.Drawing.Color]::FromArgb(180, 95, 30)
-        $Box.SelectionBackColor = [System.Drawing.Color]::FromArgb(255, 242, 204)
+        $Box.SelectionColor = [System.Drawing.Color]::FromArgb(27, 79, 138)
+        $Box.SelectionBackColor = [System.Drawing.Color]::FromArgb(227, 239, 252)
     }
     $Box.Select(0, 0)
 }
@@ -449,7 +449,7 @@ function Show-WordFeedbackView {
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Location = New-Object System.Drawing.Point(20, $y)
     $box.Width = $script:UiInnerWidth; $box.Height = 108; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
-    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
+    $box.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box $en $word
     $card.Controls.Add($box)
     $y += 122
@@ -630,7 +630,7 @@ function Show-WordStep {
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Location = New-Object System.Drawing.Point(20, $y)
     $box.Width = $script:UiInnerWidth; $box.Height = 128; $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::None
-    $box.BackColor = [System.Drawing.Color]::FromArgb(250, 248, 241); $box.ForeColor = $script:UiTextColor
+    $box.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243); $box.ForeColor = $script:UiTextColor
     Set-RichTextHighlight $box ([string](Get-ObjectPropertyValue $sentence 'en' '')) $word
     $card.Controls.Add($box)
     $y += 142
@@ -656,7 +656,7 @@ function Show-WordStep {
     $input.Height = 68
     $input.Multiline = $true
     $input.Font = New-Object System.Drawing.Font($script:UiFontName, 18)
-    $input.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
+    $input.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $card.Controls.Add($input)
     $y += 82
     $submit = New-UiButton -Text '交给大肥鱼' -Width 200 -OnClick {
@@ -743,7 +743,7 @@ function Show-WordStep {
     }
     $submit.Location = New-Object System.Drawing.Point(20, $y)
     $card.Controls.Add($submit)
-    $skip = New-UiButton -Text '先跳过（进复习）' -Width 200 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $skip = New-UiButton -Text '先跳过（进复习）' -Width 200 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:WordUi.Session
         $cur = Get-ObjectPropertyValue $s 'current' $null
         if ($null -ne $cur) { Set-ObjectPropertyValue $cur 'state' 'unmastered' }
@@ -799,7 +799,7 @@ function Show-WordPage {
     $card = New-UiCard -Width $script:UiContentWidth -Height 500
     $card.Location = New-Object System.Drawing.Point(0, 208)
     $script:ContentPanel.Controls.Add($card)
-    $exit = New-UiButton -Text '保存并退出' -Width 170 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $exit = New-UiButton -Text '保存并退出' -Width 170 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:WordUi.Session
         Save-WordSession $s
         Stop-WordSessionCleanup -Session $s -Silent | Out-Null

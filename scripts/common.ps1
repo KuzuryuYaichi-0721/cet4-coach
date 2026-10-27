@@ -199,15 +199,15 @@ if (-not ('System.Drawing.Font' -as [type])) {
 }
 
 $script:UiFontName = 'Microsoft YaHei UI'
-$script:UiTextColor = [System.Drawing.Color]::FromArgb(35, 53, 47)
-$script:UiMutedColor = [System.Drawing.Color]::FromArgb(105, 120, 114)
-$script:UiBackground = [System.Drawing.Color]::FromArgb(247, 243, 234)
+$script:UiTextColor = [System.Drawing.Color]::FromArgb(31, 41, 55)
+$script:UiMutedColor = [System.Drawing.Color]::FromArgb(100, 116, 139)
+$script:UiBackground = [System.Drawing.Color]::FromArgb(246, 244, 243)
 $script:UiCard = [System.Drawing.Color]::White
-$script:UiPrimary = [System.Drawing.Color]::FromArgb(31, 111, 92)
-$script:UiPrimaryDark = [System.Drawing.Color]::FromArgb(23, 82, 68)
-$script:UiAccent = [System.Drawing.Color]::FromArgb(232, 163, 61)
+$script:UiPrimary = [System.Drawing.Color]::FromArgb(39, 111, 191)
+$script:UiPrimaryDark = [System.Drawing.Color]::FromArgb(27, 79, 138)
+$script:UiAccent = [System.Drawing.Color]::FromArgb(91, 149, 214)
 $script:UiDanger = [System.Drawing.Color]::FromArgb(180, 70, 60)
-$script:UiGood = [System.Drawing.Color]::FromArgb(58, 130, 94)
+$script:UiGood = [System.Drawing.Color]::FromArgb(46, 125, 88)
 
 function Get-MascotPath {
     param([string]$Expression = 'neutral')

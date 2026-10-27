@@ -478,7 +478,7 @@ function Start-QuizPage {
     $card = New-UiCard -Width $script:UiContentWidth -Height 680
     $card.Location = New-Object System.Drawing.Point(0, 208)
     $script:ContentPanel.Controls.Add($card)
-    $exit = New-UiButton -Text '保存并退出' -Width 160 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $exit = New-UiButton -Text '保存并退出' -Width 160 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:QuizUi.Session
         Save-QuizSession $s
         try { Clear-ListeningTempWorkspace -Silent | Out-Null; Set-ObjectPropertyValue $s 'tempPrepared' $false; Save-QuizSession $s } catch { }
@@ -635,7 +635,7 @@ function Show-QuizQuestion {
             $pb.Location = New-Object System.Drawing.Point(20, $y)
             $pb.Width = $script:UiInnerWidth; $pb.Height = 175
             $pb.ReadOnly = $true; $pb.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-            $pb.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244); $pb.ForeColor = $script:UiTextColor
+            $pb.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243); $pb.ForeColor = $script:UiTextColor
             $pb.Font = New-Object System.Drawing.Font($script:UiFontName, 14)
             $pb.Text = $passage
             $ui.Card.Controls.Add($pb)
@@ -676,7 +676,7 @@ function Show-QuizQuestion {
         }
         $play.Location = New-Object System.Drawing.Point(20, $y)
         $ui.Card.Controls.Add($play)
-        $pause = New-UiButton -Text '暂停' -Width 110 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+        $pause = New-UiButton -Text '暂停' -Width 110 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
             if ($script:ListeningPaused) {
                 if (Resume-ListeningPlayback) { $pause.Text = '暂停'; Set-StatusBar '继续播放原音频。' }
                 else { Show-AppMessage '当前没有可继续的内置播放器；请重新点“播放听力”，或先在设置里选择内置播放器。' '暂停/继续' ([System.Windows.Forms.MessageBoxIcon]::Information) }
@@ -831,7 +831,7 @@ function Show-QuizQuestion {
     }
     $submit.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($submit)
-    $skip = New-UiButton -Text '先跳过（记入待复习）' -Width 240 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $skip = New-UiButton -Text '先跳过（记入待复习）' -Width 240 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         $s = $script:QuizUi.Session
         $cur = Get-ObjectPropertyValue $s 'current' $null
         $q = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s 'index' 0)]
@@ -847,7 +847,7 @@ function Show-QuizQuestion {
     $skip.Location = New-Object System.Drawing.Point(280, $y)
     $ui.Card.Controls.Add($skip)
     $studyLabel = if ($q.type -like 'listening*') { '听不懂？逐词讲解' } else { '我不会，逐词讲解' }
-    $study = New-UiButton -Text $studyLabel -Width 230 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(255, 209, 102)) -ForeColor $script:UiPrimaryDark -OnClick {
+    $study = New-UiButton -Text $studyLabel -Width 230 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(127, 179, 232)) -ForeColor $script:UiPrimaryDark -OnClick {
         $s2 = $script:QuizUi.Session
         $cur2 = Get-ObjectPropertyValue $s2 'current' $null
         $q2 = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s2 'index' 0)]
@@ -856,7 +856,7 @@ function Show-QuizQuestion {
     }
     if ($script:UiContentWidth -lt 1020) { $study.Location = New-Object System.Drawing.Point(20, ($y + 60)) } else { $study.Location = New-Object System.Drawing.Point(540, $y) }
     $ui.Card.Controls.Add($study)
-    $read = New-UiButton -Text '全屏阅读' -Width 170 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark -OnClick {
+    $read = New-UiButton -Text '全屏阅读' -Width 170 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(224, 236, 250)) -ForeColor $script:UiPrimaryDark -OnClick {
         $s2 = $script:QuizUi.Session
         $q2 = $script:QuizUi.Questions[[int](Get-ObjectPropertyValue $s2 'index' 0)]
         Show-QuestionReadingWindow -Question $q2
@@ -917,7 +917,7 @@ function Show-QuizFeedback {
     $box.Location = New-Object System.Drawing.Point(20, $y)
     $box.Width = $script:UiInnerWidth; $box.Height = 330
     $box.ReadOnly = $true; $box.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-    $box.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+    $box.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $box.Font = New-Object System.Drawing.Font($script:UiFontName, 15)
     $text = Get-FeedbackText $fb
     if (-not $text) { $text = '这题没有额外解析。先记住动作：先读题干，再回原文/录音定位，找同义替换。' }
@@ -942,7 +942,7 @@ function Show-QuizFeedback {
     $next.Location = New-Object System.Drawing.Point(20, $y)
     $ui.Card.Controls.Add($next)
     if ($learnedTwice) {
-        $skipRepeat = New-UiButton -Text '跳过重复内容' -Width 220 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+        $skipRepeat = New-UiButton -Text '跳过重复内容' -Width 220 -Height 50 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
             $s = $script:QuizUi.Session
             Set-ObjectPropertyValue $s 'current' $null
             Set-ObjectPropertyValue $s 'index' ([int](Get-ObjectPropertyValue $s 'index' 0) + 1)

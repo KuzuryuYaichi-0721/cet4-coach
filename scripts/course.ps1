@@ -275,23 +275,23 @@ function Show-CoursePage {
     $bodyHost = New-Object System.Windows.Forms.Panel
     $bodyHost.Location = New-Object System.Drawing.Point(18, 64)
     $bodyHost.Size = New-Object System.Drawing.Size(($script:UiContentWidth - 20), 480)
-    $bodyHost.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+    $bodyHost.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $card.Controls.Add($bodyHost)
     $body = New-Object System.Windows.Forms.RichTextBox
     $body.Dock = [System.Windows.Forms.DockStyle]::Fill
     $body.ReadOnly = $true; $body.BorderStyle = [System.Windows.Forms.BorderStyle]::None
-    $body.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+    $body.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $body.Font = New-Object System.Drawing.Font('NSimSun', 15.5)
     $body.ForeColor = $script:UiTextColor
     $bodyHost.Controls.Add($body)
     $quizPanel = New-Object System.Windows.Forms.Panel
     $quizPanel.Location = New-Object System.Drawing.Point(18, 64)
     $quizPanel.Size = New-Object System.Drawing.Size(($script:UiContentWidth - 20), 500)
-    $quizPanel.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+    $quizPanel.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $quizPanel.Visible = $false
     $quizPanel.AutoScroll = $true
     $card.Controls.Add($quizPanel)
-    $prev = New-UiButton -Text '上一页' -Width 150 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $prev = New-UiButton -Text '上一页' -Width 150 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         Set-CourseSlide ($script:CourseCtx.Index - 1)
     }
     $prev.Location = New-Object System.Drawing.Point(20, 560)
@@ -303,7 +303,7 @@ function Show-CoursePage {
     $next.Location = New-Object System.Drawing.Point(185, 560)
     $card.Controls.Add($next)
     if ($FromMenu) {
-        $skip = New-UiButton -Text '返回主菜单' -Width 160 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick { Show-HomePage }
+        $skip = New-UiButton -Text '返回主菜单' -Width 160 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick { Show-HomePage }
         $skip.Location = New-Object System.Drawing.Point(760, 560)
         $card.Controls.Add($skip)
     }

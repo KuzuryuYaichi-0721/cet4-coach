@@ -178,7 +178,7 @@ function New-ChatCard {
     $box.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
     $box.WordWrap = $true
     $box.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-    $box.BackColor = [System.Drawing.Color]::FromArgb(252, 250, 244)
+    $box.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $box.Font = New-Object System.Drawing.Font($script:UiFontName, 12)
     $box.Location = New-Object System.Drawing.Point(20, 96)
     $box.Size = New-Object System.Drawing.Size(($w - 40), 164)
@@ -196,7 +196,7 @@ function New-ChatCard {
     $send.Location = New-Object System.Drawing.Point(($w - 210), 274)
     $card.Controls.Add($send)
 
-    $clear = New-UiButton -Text '清空对话' -Width 90 -Height 40 -Size 12 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor
+    $clear = New-UiButton -Text '清空对话' -Width 90 -Height 40 -Size 12 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor
     $clear.Location = New-Object System.Drawing.Point(($w - 340), 274)
     $card.Controls.Add($clear)
 

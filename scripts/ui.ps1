@@ -43,18 +43,18 @@ function New-MainWindow {
     $title = New-UiLabel -Text '四级教练' -Size 30 -Style ([System.Drawing.FontStyle]::Bold) -Color ([System.Drawing.Color]::White)
     $title.Location = New-Object System.Drawing.Point(24, 8)
     $top.Controls.Add($title)
-    $sub = New-UiLabel -Text '本地题库 · 单词 30 分钟 · 20 题（听力/阅读）· 错题画像' -Size 13 -Color ([System.Drawing.Color]::FromArgb(205, 226, 217))
+    $sub = New-UiLabel -Text '本地题库 · 单词 30 分钟 · 20 题（听力/阅读）· 错题画像' -Size 13 -Color ([System.Drawing.Color]::FromArgb(197, 219, 242))
     $sub.Location = New-Object System.Drawing.Point(27, 56)
     $top.Controls.Add($sub)
-    $api = New-UiLabel -Text '' -Size 12 -Color ([System.Drawing.Color]::FromArgb(255, 230, 170))
+    $api = New-UiLabel -Text '' -Size 12 -Color ([System.Drawing.Color]::FromArgb(197, 219, 242))
     $api.Location = New-Object System.Drawing.Point -ArgumentList ([Math]::Max(20, $width - 360)), 34
     $api.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
     if (Test-DeepSeekKeyPresent) {
         $api.Text = 'DeepSeek Key 已检测到'
-        $api.ForeColor = [System.Drawing.Color]::FromArgb(200, 240, 215)
+        $api.ForeColor = [System.Drawing.Color]::FromArgb(211, 232, 249)
     } else {
         $api.Text = '未设置 API Key（本地功能可用）'
-        $api.ForeColor = [System.Drawing.Color]::FromArgb(255, 220, 150)
+        $api.ForeColor = [System.Drawing.Color]::FromArgb(220, 235, 250)
     }
     $top.Controls.Add($api)
 
@@ -69,7 +69,7 @@ function New-MainWindow {
 
     $side = New-Object System.Windows.Forms.Panel
     $side.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $side.BackColor = [System.Drawing.Color]::FromArgb(239, 234, 222)
+    $side.BackColor = [System.Drawing.Color]::FromArgb(232, 241, 251)
     $side.Padding = New-Object System.Windows.Forms.Padding(12)
     $middle.Controls.Add($side, 0, 0)
 
@@ -93,16 +93,16 @@ function New-MainWindow {
     $y = 150
     $onboardingDone = [bool](Get-ObjectPropertyValue (Get-AppState) 'onboardingComplete' $false)
     foreach ($item in $navItems) {
-        $b = New-UiButton -Text $item.Text -Width 212 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(239, 234, 222)) -ForeColor $script:UiTextColor
+        $b = New-UiButton -Text $item.Text -Width 212 -Height 48 -BackColor ([System.Drawing.Color]::FromArgb(232, 241, 251)) -ForeColor $script:UiTextColor
         $b.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
         $b.Padding = New-Object System.Windows.Forms.Padding(12, 0, 0, 0)
         $b.Font = Get-UiFont -Size 16 -Style ([System.Drawing.FontStyle]::Bold)
         $b.Location = New-Object System.Drawing.Point(10, $y)
-        $b.FlatAppearance.MouseOverBackColor = [System.Drawing.Color]::FromArgb(222, 233, 226)
+        $b.FlatAppearance.MouseOverBackColor = [System.Drawing.Color]::FromArgb(217, 230, 245)
         $b.Add_Click($item.Action)
         if (-not $onboardingDone -and $item.Text -notin @('入门微课', '设置与诊断')) {
             $b.Enabled = $false
-            $b.ForeColor = [System.Drawing.Color]::FromArgb(160, 158, 150)
+            $b.ForeColor = [System.Drawing.Color]::FromArgb(150, 165, 185)
         }
         $side.Controls.Add($b)
         $script:NavButtons += $b
@@ -126,7 +126,7 @@ function New-MainWindow {
 
     $bottom = New-Object System.Windows.Forms.Panel
     $bottom.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $bottom.BackColor = [System.Drawing.Color]::FromArgb(239, 234, 222)
+    $bottom.BackColor = [System.Drawing.Color]::FromArgb(232, 241, 251)
     $root.Controls.Add($bottom, 0, 2)
     $status = New-UiLabel -Text '准备就绪。' -Size 12 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $status.Location = New-Object System.Drawing.Point(16, 8)
@@ -214,10 +214,10 @@ function Show-HomePage {
     $statusCard.Controls.Add($s1)
 
     if (-not (Test-DeepSeekKeyPresent)) {
-        $banner = New-UiCard -Width $script:UiContentWidth -Height 84 -Color ([System.Drawing.Color]::FromArgb(255, 248, 226))
+        $banner = New-UiCard -Width $script:UiContentWidth -Height 84 -Color ([System.Drawing.Color]::FromArgb(227, 239, 252))
         $banner.Location = New-Object System.Drawing.Point(0, 204)
         $script:ContentPanel.Controls.Add($banner)
-        $bl = New-UiLabel -Text '还没有 DEEPSEEK_API_KEY：单词/题库/听力仍可用，但大模型评估与深度讲解会跳过。设置方法在「设置与诊断」。' -Size 15 -Color ([System.Drawing.Color]::FromArgb(130, 86, 20)) -MaxWidth $script:UiInnerWidth
+        $bl = New-UiLabel -Text '还没有 DEEPSEEK_API_KEY：单词/题库/听力仍可用，但大模型评估、深度讲解和聊天会跳过。设置方法在「设置与诊断」。' -Size 15 -Color ([System.Drawing.Color]::FromArgb(27, 79, 138)) -MaxWidth $script:UiInnerWidth
         $bl.Location = New-Object System.Drawing.Point(22, 20)
         $banner.Controls.Add($bl)
     }
@@ -237,10 +237,10 @@ function Show-HomePage {
     $script:ContentPanel.Controls.Add($cards)
     $cards.Controls.Add((New-DashboardCard -Title '单词 30 分钟' -Description $wordDesc -ButtonText $wordText -Action { Show-WordPage } -Width 510 -Height 200))
     $cards.Controls.Add((New-DashboardCard -Title '20 题限时刷题' -Description $quizDesc -ButtonText $quizText -Action { Start-QuizPage } -Accent $script:UiAccent -Width 510 -Height 200))
-    $cards.Controls.Add((New-DashboardCard -Title '打卡月历' -Description '看这个月哪几天完成了单词/刷题；连续 7/14/30 天会有一句简短鼓励。' -ButtonText '看打卡' -Action { Show-CheckinPage } -BackColor ([System.Drawing.Color]::FromArgb(238, 245, 241)) -Width 510 -Height 200))
-    $cards.Controls.Add((New-DashboardCard -Title '题库与缺口报告' -Description ('当前题库 {0} 题；导入后按题干+选项去重，并统计重点题型是否够用。' -f @(Get-QuestionBank).Count) -ButtonText '查看题库' -Action { Show-ImportPage } -BackColor ([System.Drawing.Color]::FromArgb(238, 245, 241)) -Width 510 -Height 200))
-    $cards.Controls.Add((New-DashboardCard -Title '听力整理' -Description '已分 Section 的文件只复制重命名；整卷才按时间点用 ffmpeg 切。缺时间点不猜。' -ButtonText '整理听力' -Action { Show-ListeningPage } -BackColor ([System.Drawing.Color]::FromArgb(248, 241, 230)) -Width 510 -Height 200))
-    $cards.Controls.Add((New-DashboardCard -Title '本周错题画像' -Description '周日自动生成 3—5 句；平时也可手动生成。总结错得最多的 2 个题型和 1 个共同模式。' -ButtonText '看错题画像' -Action { Show-CheckinPage } -BackColor ([System.Drawing.Color]::FromArgb(248, 241, 230)) -Width 510 -Height 200))
+    $cards.Controls.Add((New-DashboardCard -Title '打卡月历' -Description '看这个月哪几天完成了单词/刷题；连续 7/14/30 天会有一句简短鼓励。' -ButtonText '看打卡' -Action { Show-CheckinPage } -BackColor ([System.Drawing.Color]::FromArgb(232, 241, 251)) -Width 510 -Height 200))
+    $cards.Controls.Add((New-DashboardCard -Title '题库与缺口报告' -Description ('当前题库 {0} 题；导入后按题干+选项去重，并统计重点题型是否够用。' -f @(Get-QuestionBank).Count) -ButtonText '查看题库' -Action { Show-ImportPage } -BackColor ([System.Drawing.Color]::FromArgb(232, 241, 251)) -Width 510 -Height 200))
+    $cards.Controls.Add((New-DashboardCard -Title '听力整理' -Description '已分 Section 的文件只复制重命名；整卷才按时间点用 ffmpeg 切。缺时间点不猜。' -ButtonText '整理听力' -Action { Show-ListeningPage } -BackColor ([System.Drawing.Color]::FromArgb(232, 241, 251)) -Width 510 -Height 200))
+    $cards.Controls.Add((New-DashboardCard -Title '本周错题画像' -Description '周日自动生成 3—5 句；平时也可手动生成。总结错得最多的 2 个题型和 1 个共同模式。' -ButtonText '看错题画像' -Action { Show-CheckinPage } -BackColor ([System.Drawing.Color]::FromArgb(232, 241, 251)) -Width 510 -Height 200))
 
     # Sunday automatic weekly portrait (one cached call at most).
     if ((Get-Date).DayOfWeek -eq [System.DayOfWeek]::Sunday -and (Test-DeepSeekKeyPresent)) {
@@ -353,7 +353,7 @@ function Add-PlayerSettingsCard {
     $custom.Width = 460; $custom.Height = 32
     $custom.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 11)
     $card.Controls.Add($custom)
-    $browse = New-UiButton -Text '浏览…' -Width 90 -Height 34 -Size 13 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark -OnClick {
+    $browse = New-UiButton -Text '浏览…' -Width 90 -Height 34 -Size 13 -BackColor ([System.Drawing.Color]::FromArgb(224, 236, 250)) -ForeColor $script:UiPrimaryDark -OnClick {
         $dlg = New-Object System.Windows.Forms.OpenFileDialog
         $dlg.Filter = '播放器 (*.exe)|*.exe|所有文件 (*.*)|*.*'
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $custom.Text = $dlg.FileName; $combo.SelectedIndex = 4 }
@@ -427,7 +427,7 @@ function Show-SettingsPage {
     }
     $test.Location = New-Object System.Drawing.Point(20, $buttonY)
     $card.Controls.Add($test)
-    $open = New-UiButton -Text '打开数据文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $open = New-UiButton -Text '打开数据文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         Start-Process explorer.exe (Get-CET4Path 'data')
     }
     $open.Location = New-Object System.Drawing.Point(270, $buttonY)
@@ -516,7 +516,7 @@ function Show-ImportPage {
     $gt = New-UiLabel -Text $gapText -Size 14 -Color $script:UiMutedColor -MaxWidth $script:UiInnerWidth
     $gt.Location = New-Object System.Drawing.Point(20, 54)
     $gapCard.Controls.Add($gt)
-    $openReport = New-UiButton -Text '打开完整缺口报告' -Width 210 -Height 42 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $openReport = New-UiButton -Text '打开完整缺口报告' -Width 210 -Height 42 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         $p = Get-CET4Path 'data/import_report.json'
         if (Test-Path -LiteralPath $p) { Start-Process notepad.exe $p } else { Show-AppMessage '还没有导入报告。' '缺口报告' }
     }
@@ -567,7 +567,7 @@ function Show-ListeningPage {
     }
     $start.Location = New-Object System.Drawing.Point(20, 220)
     $card.Controls.Add($start)
-    $openSource = New-UiButton -Text '打开原始素材目录' -Width 210 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $openSource = New-UiButton -Text '打开原始素材目录' -Width 210 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         if (-not (Test-Path -LiteralPath $source)) { New-Item -ItemType Directory -Force -Path $source | Out-Null }
         Start-Process explorer.exe $source
     }
@@ -609,7 +609,7 @@ function Show-StartupProgressDialog {
     $form.FormBorderStyle = 'FixedDialog'
     $form.MaximizeBox = $false
     $form.MinimizeBox = $false
-    $form.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
+    $form.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10)
     $pic = New-MascotPicture 'happy' 130
     if ($pic) { $pic.Location = New-Object System.Drawing.Point(24, 45); $form.Controls.Add($pic) }
@@ -630,11 +630,11 @@ function Show-StartupProgressDialog {
         } catch { $status.Text = '保存失败：' + (Format-SafeError $_) }
     }
     $save.Location = New-Object System.Drawing.Point(20, 340); $form.Controls.Add($save)
-    $open = New-UiButton -Text '打开 data 文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(210, 205, 192)) -ForeColor $script:UiTextColor -OnClick {
+    $open = New-UiButton -Text '打开 data 文件夹' -Width 180 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(217, 230, 245)) -ForeColor $script:UiTextColor -OnClick {
         try { Start-Process explorer.exe (Get-CET4Path 'data') } catch { }
     }
     $open.Location = New-Object System.Drawing.Point(210, 340); $form.Controls.Add($open)
-    $close = New-UiButton -Text '关闭' -Width 130 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(232, 235, 240)) -ForeColor $script:UiTextColor -OnClick { $form.Close() }
+    $close = New-UiButton -Text '关闭' -Width 130 -Height 46 -Size 15 -BackColor ([System.Drawing.Color]::FromArgb(225, 235, 247)) -ForeColor $script:UiTextColor -OnClick { $form.Close() }
     $close.Location = New-Object System.Drawing.Point(545, 340); $form.Controls.Add($close)
     $form.AcceptButton = $close
     $form.CancelButton = $close

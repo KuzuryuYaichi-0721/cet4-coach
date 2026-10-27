@@ -169,13 +169,13 @@ function Show-ReaderForm {
     if ($TestWidth -gt 0) { $form.Width = $TestWidth }
     if ($TestHeight -gt 0) { $form.Height = $TestHeight }
     $form.StartPosition = 'CenterParent'
-    $form.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
+    $form.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
     $form.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10)
     $box = New-Object System.Windows.Forms.RichTextBox
     $box.Dock = 'Fill'; $box.ReadOnly = $true; $box.BorderStyle = 'None'
     $box.WordWrap = $true; $box.ScrollBars = 'Vertical'; $box.DetectUrls = $false
-    $box.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 247)
-    $box.ForeColor = [System.Drawing.Color]::FromArgb(38, 50, 56)
+    $box.BackColor = [System.Drawing.Color]::FromArgb(246, 244, 243)
+    $box.ForeColor = [System.Drawing.Color]::FromArgb(31, 41, 55)
     $box.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 17)
     $box.Text = $Text
     $box.HideSelection = $false
@@ -218,11 +218,11 @@ function Show-ReaderForm {
     $flow.FlowDirection = 'RightToLeft'
     $flow.WrapContents = $false
     $flow.Padding = New-Object System.Windows.Forms.Padding(0, 4, 8, 4)
-    $btnMinus = New-UiButton -Text 'A-' -Width 58 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark
+    $btnMinus = New-UiButton -Text 'A-' -Width 58 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(224, 236, 250)) -ForeColor $script:UiPrimaryDark
     $btnMinus.Add_Click({ $size = [Math]::Max(12, $size - 1); $box.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', $size) })
-    $btnPlus = New-UiButton -Text 'A+' -Width 58 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(224, 232, 255)) -ForeColor $script:UiPrimaryDark
+    $btnPlus = New-UiButton -Text 'A+' -Width 58 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(224, 236, 250)) -ForeColor $script:UiPrimaryDark
     $btnPlus.Add_Click({ $size = [Math]::Min(30, $size + 1); $box.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', $size) })
-    $btnFull = New-UiButton -Text '全屏' -Width 88 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(77, 107, 254)) -ForeColor ([System.Drawing.Color]::White)
+    $btnFull = New-UiButton -Text '全屏' -Width 88 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(39, 111, 191)) -ForeColor ([System.Drawing.Color]::White)
     $btnFull.Add_Click({
         if (-not $full) {
             $oldBorder = $form.FormBorderStyle; $oldState = $form.WindowState
@@ -231,7 +231,7 @@ function Show-ReaderForm {
             $form.FormBorderStyle = $oldBorder; $form.WindowState = $oldState; $full = $false; $btnFull.Text = '全屏'
         }
     })
-    $btnClose = New-UiButton -Text '关闭' -Width 76 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(232, 235, 240)) -ForeColor $script:UiTextColor
+    $btnClose = New-UiButton -Text '关闭' -Width 76 -Height 40 -BackColor ([System.Drawing.Color]::FromArgb(225, 235, 247)) -ForeColor $script:UiTextColor
     $btnClose.Add_Click({ $form.Close() })
     foreach ($b in @($btnClose, $btnFull, $btnPlus, $btnMinus)) { $flow.Controls.Add($b) }
     $top.Controls.Add($titlePanel, 0, 0)
