@@ -519,6 +519,89 @@ function Import-LearningProgress {
     return [pscustomobject]@{ Matched = $r.Resolved; Orphans = $r.Orphans; Overlay = $r.Overlay; Words = @($pkg.words.status).Count; Checkins = @($pkg.checkins.days).Count }
 }
 
+function Clear-TodayProgress {
+    $today = (Get-Date).ToString('yyyy-MM-dd')
+    $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+    $backupRoot = Join-Path (Get-CET4Path 'backup') ('clear-today-' + $stamp)
+    New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
+    $paths = @('data/state.json','data/word_progress.json','data/checkin.json','data/wrongbook.json','data/progress_seen.json')
+    foreach ($rel in $paths) {
+        $p = Get-CET4Path $rel
+        if (Test-Path -LiteralPath $p) {
+            $dest = Join-Path $backupRoot ($rel -replace 'data/','')
+            $destDir = Split-Path -Parent $dest
+            if (-not (Test-Path -LiteralPath $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
+            Copy-Item -LiteralPath $p -Destination $dest -Force
+        }
+    }
+    foreach ($sub in @('data/sessions','data/plans','data/history','data/progress')) {
+        $p = Get-CET4Path $sub
+        if (Test-Path -LiteralPath $p) {
+            $dest = Join-Path $backupRoot ($sub -replace 'data/','')
+            Copy-Item -LiteralPath $p -Destination $dest -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    $counts = [ordered]@{ sessions = 0; plans = 0; history = 0; checkins = 0; wrongbook = 0; seen = 0 }
+
+    foreach ($sub in @('data/sessions','data/plans','data/history')) {
+        $dir = Get-CET4Path $sub
+        if (-not (Test-Path -LiteralPath $dir)) { continue }
+        foreach ($f in @(Get-ChildItem -LiteralPath $dir -File -ErrorAction SilentlyContinue)) {
+            if ($f.Name -like ('*' + $today + '*')) {
+                Remove-Item -LiteralPath $f.FullName -Force -ErrorAction SilentlyContinue
+                if ($sub -like '*sessions*') { $counts.sessions++ }
+                elseif ($sub -like '*plans*') { $counts.plans++ }
+                else { $counts.history++ }
+            }
+        }
+    }
+
+    $checkinPath = Get-CET4Path 'data/checkin.json'
+    if (Test-Path -LiteralPath $checkinPath) {
+        $ci = Read-JsonFile $checkinPath ([pscustomobject]@{ days = [pscustomobject]@{}; milestones = @() }) -Quiet
+        $days = Get-ObjectPropertyValue $ci 'days' $null
+        if ($days -is [System.Collections.IDictionary]) {
+            if ($days.Contains($today)) { $days.Remove($today); $counts.checkins++ }
+        } elseif ($days) {
+            if ($days.PSObject.Properties[$today]) { $days.PSObject.Properties.Remove($today); $counts.checkins++ }
+        }
+        $milestones = @(Get-ObjectPropertyValue $ci 'milestones' @() | Where-Object { [string](Get-ObjectPropertyValue $_ 'date' '') -ne $today })
+        Set-ObjectPropertyValue $ci 'milestones' $milestones
+        Write-JsonFile $checkinPath $ci
+    }
+
+    $wrongPath = Get-CET4Path 'data/wrongbook.json'
+    if (Test-Path -LiteralPath $wrongPath) {
+        $all = @(Read-JsonFile $wrongPath @() -Quiet)
+        $keep = @($all | Where-Object {
+            $raw = Get-ObjectPropertyValue $_ 'firstWrongAt' ''
+            $firstDate = ''
+            if ($raw -is [datetime]) { $firstDate = $raw.ToString('yyyy-MM-dd') }
+            elseif ($raw) {
+                $txt = [string]$raw
+                if ($txt.Length -ge 10) { $firstDate = $txt.Substring(0, 10) }
+            }
+            $firstDate -ne $today
+        })
+        $counts.wrongbook = $all.Count - $keep.Count
+        Write-JsonFile $wrongPath @($keep)
+    }
+
+    $seenPath = Get-CET4Path 'data/progress_seen.json'
+    if (Test-Path -LiteralPath $seenPath) {
+        $seen = @(Read-JsonFile $seenPath @() -Quiet)
+        $keep = @($seen | Where-Object { [string](Get-ObjectPropertyValue $_ 'date' '') -ne $today })
+        $counts.seen = $seen.Count - $keep.Count
+        Write-JsonFile $seenPath @($keep)
+    }
+
+    $latest = Get-PortableProgressPath
+    if (Test-Path -LiteralPath $latest) { Remove-Item -LiteralPath $latest -Force -ErrorAction SilentlyContinue }
+    Save-PortableProgress -Silent
+    return [pscustomobject]@{ Date = $today; Backup = $backupRoot; Counts = [pscustomobject]$counts }
+}
+
 function Resolve-ProgressOverlay {
     $overlayPath = Get-ProgressOverlayPath
     $overlay = @(Read-JsonFile $overlayPath @() -Quiet)
